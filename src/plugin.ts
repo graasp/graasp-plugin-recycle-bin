@@ -1,7 +1,19 @@
 import {FastifyPluginAsync} from "fastify";
 import {BaseItem} from "./base-item";
-import {IdParam, Item, ItemCopyHookHandlerExtraData, Member, PreHookHandlerType} from "graasp";
-import {CopyRecycleBin, CopyToRecycleBin, MoveRecycleBin} from "./graasp-recycle-bin-errors";
+import {
+  IdParam,
+  Item,
+  ItemCopyHookHandlerExtraData,
+  ItemMembership,
+  Member,
+  PreHookHandlerType
+} from "graasp";
+import {
+  CopyRecycleBin,
+  CopyToRecycleBin,
+  DeleteRecycleBin,
+  MoveRecycleBin, ShareRecycleBinOrContent
+} from "./graasp-recycle-bin-errors";
 import {RECYCLE_BIN_TYPE} from "./constants";
 
 const plugin: FastifyPluginAsync = async (fastify) => {
@@ -50,7 +62,7 @@ const plugin: FastifyPluginAsync = async (fastify) => {
 
   /**
    * Check if the recycle bin is being moved
-   * @param move Item move (before being saved)
+   * @param move Item move (before being moved)
    */
   const preventMoveOfRecycleBin: PreHookHandlerType<Item> =
     async (move: Item) => {
@@ -59,6 +71,41 @@ const plugin: FastifyPluginAsync = async (fastify) => {
       if(type=== RECYCLE_BIN_TYPE) throw new MoveRecycleBin()
     };
   runner.setTaskPreHookHandler(itemTaskManager.getMoveTaskName(), preventMoveOfRecycleBin);
+
+  /**
+   * Check if the recycle bin is being deleted
+   * @param deleted Item delete (before being deleted)
+   */
+  const preventDeleteRecycleBin: PreHookHandlerType<Item> =
+    async (deleted: Item) => {
+      const { type } = deleted;
+
+      if(type=== RECYCLE_BIN_TYPE) throw new DeleteRecycleBin()
+    };
+  runner.setTaskPreHookHandler(itemTaskManager.getDeleteTaskName(), preventDeleteRecycleBin);
+
+  /**
+   * Check if the recycle bin is being deleted
+   * @param iM ItemMembership delete (before being deleted)
+   */
+  const preventSharingOperationsRecycleBin: PreHookHandlerType<ItemMembership> =
+    async (iM: ItemMembership, member: Member) => {
+      const { itemPath } = iM;
+
+      const { extra } = member;
+      const recycleBin = extra['recycleBin']
+
+      if(!recycleBin) return
+
+      const recycleBinId = recycleBin['id'];
+      const getRecycleBinTask = itemTaskManager.createGetTask(member,recycleBinId);
+      const recycleBinItem = await runner.runSingle(getRecycleBinTask);
+      const { path: recycleBinPath } = recycleBinItem;
+      if(itemPath.includes(recycleBinPath)) throw new ShareRecycleBinOrContent()
+    };
+  runner.setTaskPreHookHandler(itemMembershipTaskManager.getCreateTaskName(), preventSharingOperationsRecycleBin);
+  runner.setTaskPreHookHandler(itemMembershipTaskManager.getUpdateTaskName(), preventSharingOperationsRecycleBin);
+
 
   fastify.post<{ Params: IdParam}> (
     '/:id/recycle',
@@ -92,10 +139,10 @@ const plugin: FastifyPluginAsync = async (fastify) => {
         await runner.runSingle(updateMemberTask,log);
       }
 
-      const recycleTask = itemTaskManager.createMoveTask(member,item.id,recycleBin.id);
-      await runner.runSingle(recycleTask,log);
       const removeItemMembershipsTask = itemMembershipTaskManager.createDeleteAllOnAndBelowItemTask(member,itemId);
       await runner.runSingle(removeItemMembershipsTask,log);
+      const recycleTask = itemTaskManager.createMoveTask(member,item.id,recycleBin.id);
+      await runner.runSingle(recycleTask,log);
       return recycleBin;
     }
   )

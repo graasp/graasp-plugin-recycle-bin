@@ -35,3 +35,15 @@ export class MoveRecycleBin extends GraaspItemTagsError {
     super({ code: 'GRBERR003', statusCode: 406, message: 'Cannot Move Recycle Bin' });
   }
 }
+
+export class DeleteRecycleBin extends GraaspItemTagsError {
+  constructor() {
+    super({ code: 'GRBERR004', statusCode: 406, message: 'Cannot Delete Recycle Bin' });
+  }
+}
+
+export class ShareRecycleBinOrContent extends GraaspItemTagsError {
+  constructor() {
+    super({ code: 'GRBERR005', statusCode: 406, message: `Cannot perform Sharing operations on Recycle Bin or it's Content` });
+  }
+}
