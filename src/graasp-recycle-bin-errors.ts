@@ -42,8 +42,15 @@ export class DeleteRecycleBin extends GraaspItemTagsError {
   }
 }
 
+export class CreateRecycleBin extends GraaspItemTagsError {
+  constructor() {
+    super({ code: 'GRBERR004', statusCode: 406, message: 'Cannot Create item with recycleBin Type' });
+  }
+}
+
+
 export class ShareRecycleBinOrContent extends GraaspItemTagsError {
   constructor() {
-    super({ code: 'GRBERR005', statusCode: 406, message: `Cannot perform Sharing operations on Recycle Bin or it's Content` });
+    super({ code: 'GRBERR006', statusCode: 406, message: `Cannot perform Sharing operations on Recycle Bin or it's Content` });
   }
 }

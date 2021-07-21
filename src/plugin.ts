@@ -10,7 +10,7 @@ import {
 } from "graasp";
 import {
   CopyRecycleBin,
-  CopyToRecycleBin,
+  CopyToRecycleBin, CreateRecycleBin,
   DeleteRecycleBin,
   MoveRecycleBin, ShareRecycleBinOrContent
 } from "./graasp-recycle-bin-errors";
@@ -52,6 +52,18 @@ const plugin: FastifyPluginAsync = async (fastify) => {
    * Check if the recycle bin is being copied
    * @param copy Item copy (before being saved)
    */
+  const preventCreationOfRecycleBin: PreHookHandlerType<Item> =
+    async (copy: Item) => {
+      const { type } = copy;
+
+      if(type=== RECYCLE_BIN_TYPE) throw new CreateRecycleBin()
+    };
+  runner.setTaskPreHookHandler(itemTaskManager.getCreateTaskName(), preventCreationOfRecycleBin);
+
+  /**
+   * Check if the recycle bin is being copied
+   * @param copy Item copy (before being saved)
+   */
   const preventCopyOfRecycleBin: PreHookHandlerType<Item> =
     async (copy: Item) => {
       const { type } = copy;
@@ -85,8 +97,8 @@ const plugin: FastifyPluginAsync = async (fastify) => {
   runner.setTaskPreHookHandler(itemTaskManager.getDeleteTaskName(), preventDeleteRecycleBin);
 
   /**
-   * Check if the recycle bin is being deleted
-   * @param iM ItemMembership delete (before being deleted)
+   * Check if the recycle bin or it's content are being shared
+   * @param iM ItemMembership shared or updated (before being done)
    */
   const preventSharingOperationsRecycleBin: PreHookHandlerType<ItemMembership> =
     async (iM: ItemMembership, member: Member) => {
