@@ -20,18 +20,18 @@ export class GraaspItemTagsError implements GraaspError {
 
 export class CopyToRecycleBin extends GraaspItemTagsError {
   constructor(data?: unknown) {
-    super({ code: 'GRBERR001', statusCode: 404, message: 'Cannot Copy Item to Recycle Bin' }, data);
+    super({ code: 'GRBERR001', statusCode: 406, message: 'Cannot Copy Item to Recycle Bin' }, data);
   }
 }
 
 export class CopyRecycleBin extends GraaspItemTagsError {
   constructor() {
-    super({ code: 'GRBERR002', statusCode: 404, message: 'Cannot Copy Recycle Bin' });
+    super({ code: 'GRBERR002', statusCode: 406, message: 'Cannot Copy Recycle Bin' });
   }
 }
 
 export class MoveRecycleBin extends GraaspItemTagsError {
   constructor() {
-    super({ code: 'GRBERR003', statusCode: 404, message: 'Cannot Move Recycle Bin' });
+    super({ code: 'GRBERR003', statusCode: 406, message: 'Cannot Move Recycle Bin' });
   }
 }

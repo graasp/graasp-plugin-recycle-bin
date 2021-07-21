@@ -1,7 +1,7 @@
 import {FastifyPluginAsync} from "fastify";
 import {BaseItem} from "./base-item";
 import {IdParam, Item, ItemCopyHookHandlerExtraData, Member, PreHookHandlerType} from "graasp";
-import {CopyRecycleBin, CopyToRecycleBin} from "./graasp-recycle-bin-errors";
+import {CopyRecycleBin, CopyToRecycleBin, MoveRecycleBin} from "./graasp-recycle-bin-errors";
 import {RECYCLE_BIN_TYPE} from "./constants";
 
 const plugin: FastifyPluginAsync = async (fastify) => {
@@ -47,6 +47,18 @@ const plugin: FastifyPluginAsync = async (fastify) => {
       if(type=== RECYCLE_BIN_TYPE) throw new CopyRecycleBin()
     };
   runner.setTaskPreHookHandler(itemTaskManager.getCopyTaskName(), preventCopyOfRecycleBin);
+
+  /**
+   * Check if the recycle bin is being moved
+   * @param move Item move (before being saved)
+   */
+  const preventMoveOfRecycleBin: PreHookHandlerType<Item> =
+    async (move: Item) => {
+      const { type } = move;
+
+      if(type=== RECYCLE_BIN_TYPE) throw new MoveRecycleBin()
+    };
+  runner.setTaskPreHookHandler(itemTaskManager.getMoveTaskName(), preventMoveOfRecycleBin);
 
   fastify.post<{ Params: IdParam}> (
     '/:id/recycle',
