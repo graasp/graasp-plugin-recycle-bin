@@ -49,12 +49,12 @@ const plugin: FastifyPluginAsync = async (fastify) => {
   runner.setTaskPreHookHandler(itemTaskManager.getCopyTaskName(), preventCopyToRecycleBin);
 
   /**
-   * Check if the recycle bin is being copied
-   * @param copy Item copy (before being saved)
+   * Check if the recycle bin is being created
+   * @param created Item copy (before being creation)
    */
   const preventCreationOfRecycleBin: PreHookHandlerType<Item> =
-    async (copy: Item) => {
-      const { type } = copy;
+    async (created: Item) => {
+      const { type } = created;
 
       if(type=== RECYCLE_BIN_TYPE) throw new CreateRecycleBin()
     };
@@ -99,6 +99,7 @@ const plugin: FastifyPluginAsync = async (fastify) => {
   /**
    * Check if the recycle bin or it's content are being shared
    * @param iM ItemMembership shared or updated (before being done)
+   * @param member Member triggering the create item membership task - used to get recycleBin
    */
   const preventSharingOperationsRecycleBin: PreHookHandlerType<ItemMembership> =
     async (iM: ItemMembership, member: Member) => {
