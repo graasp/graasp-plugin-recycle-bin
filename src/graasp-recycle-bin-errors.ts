@@ -18,39 +18,38 @@ export class GraaspItemTagsError implements GraaspError {
   }
 }
 
-export class CopyToRecycleBin extends GraaspItemTagsError {
+export class CannotCopyIntoRecycleBin extends GraaspItemTagsError {
   constructor(data?: unknown) {
-    super({ code: 'GRBERR001', statusCode: 406, message: 'Cannot Copy Item to Recycle Bin' }, data);
+    super({ code: 'GRBERR001', statusCode: 400, message: 'Cannot copy items into recycle bin item' }, data);
   }
 }
 
-export class CopyRecycleBin extends GraaspItemTagsError {
-  constructor() {
-    super({ code: 'GRBERR002', statusCode: 406, message: 'Cannot Copy Recycle Bin' });
+export class CannotCopyRecycleBin extends GraaspItemTagsError {
+  constructor(data?: unknown) {
+    super({ code: 'GRBERR002', statusCode: 400, message: 'Cannot copy recycle bin item' }, data);
   }
 }
 
-export class MoveRecycleBin extends GraaspItemTagsError {
-  constructor() {
-    super({ code: 'GRBERR003', statusCode: 406, message: 'Cannot Move Recycle Bin' });
+export class CannotMoveRecycleBin extends GraaspItemTagsError {
+  constructor(data?: unknown) {
+    super({ code: 'GRBERR003', statusCode: 400, message: 'Cannot move recycle bin item' }, data);
   }
 }
 
-export class DeleteRecycleBin extends GraaspItemTagsError {
-  constructor() {
-    super({ code: 'GRBERR004', statusCode: 406, message: 'Cannot Delete Recycle Bin' });
+export class CannotDeleteRecycleBin extends GraaspItemTagsError {
+  constructor(data?: unknown) {
+    super({ code: 'GRBERR004', statusCode: 400, message: 'Cannot delete recycle bin item' }, data);
   }
 }
 
-export class CreateRecycleBin extends GraaspItemTagsError {
-  constructor() {
-    super({ code: 'GRBERR004', statusCode: 406, message: 'Cannot Create item with recycleBin Type' });
+export class CannotCreateItemMembershipInRecycleBin extends GraaspItemTagsError {
+  constructor(data?: unknown) {
+    super({ code: 'GRBERR005', statusCode: 400, message: 'Cannot create item memberships in recycle bin' }, data);
   }
 }
 
-
-export class ShareRecycleBinOrContent extends GraaspItemTagsError {
-  constructor() {
-    super({ code: 'GRBERR006', statusCode: 406, message: `Cannot perform Sharing operations on Recycle Bin or it's Content` });
+export class CannotModifyOwnRecycleBinItemMembership extends GraaspItemTagsError {
+  constructor(data?: unknown) {
+    super({ code: 'GRBERR006', statusCode: 400, message: 'Cannot modify own recycle bin item membership ' }, data);
   }
 }
