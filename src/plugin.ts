@@ -1,164 +1,172 @@
-import {FastifyPluginAsync} from "fastify";
-import {BaseItem} from "./base-item";
+import { FastifyLoggerInstance, FastifyPluginAsync } from 'fastify';
 import {
   IdParam,
+  IdsParams,
   Item,
-  ItemCopyHookHandlerExtraData,
   ItemMembership,
   Member,
-  PreHookHandlerType
-} from "graasp";
+  UnknownExtra
+} from 'graasp';
 import {
-  CopyRecycleBin,
-  CopyToRecycleBin, CreateRecycleBin,
-  DeleteRecycleBin,
-  MoveRecycleBin, ShareRecycleBinOrContent
-} from "./graasp-recycle-bin-errors";
-import {RECYCLE_BIN_TYPE} from "./constants";
+  CannotCopyIntoRecycleBin,
+  CannotCopyRecycleBin,
+  CannotCreateItemMembershipInRecycleBin,
+  CannotDeleteRecycleBin,
+  CannotModifyOwnRecycleBinItemMembership,
+  CannotMoveRecycleBin
+} from './graasp-recycle-bin-errors';
+import { recycleOne, recycleMany } from './schemas';
 
-const plugin: FastifyPluginAsync = async (fastify) => {
+interface RecycleExtra extends UnknownExtra {
+  recycleBin?: { itemId: string }
+}
 
+interface RecycleBinOptions {
+  /** Max number of items to recycle in a request.
+   * A number above this value will trigger an immediate bad request (400). Defaults to `10`. */
+  maxItemsInRequest: number
+  /** Max number of items to recycle in a request w/ response. A number of items less or equal
+   * to this value will make the server completely finish the execution before returning a response.
+   * Above this value, the server will immediatly return a 202 (accepted) and the execution
+   * will continue "in the back". **This value should be smaller than `maxItemsInRequest`**
+   * otherwise it has no effect. Defaults to `5`. */
+  maxItemsWithResponse: number
+}
+
+const RECYCLE_BIN_TYPE = 'recycleBin';
+
+const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) => {
   const {
     items: { taskManager: itemTaskManager },
     members: { taskManager: memberTaskManager },
     itemMemberships: { taskManager: itemMembershipTaskManager },
-    taskRunner: runner } = fastify;
+    taskRunner: runner
+  } = fastify;
+  const { maxItemsInRequest = 10, maxItemsWithResponse = 5 } = options;
 
+  // Hook handlers
 
-  /**
-   * Check if an item is being copied to the recycle bin
-   * @param copy Item copy (before being saved)
-   * @param member Member triggering the copy task - used to get recycleBin
-   */
-  const preventCopyToRecycleBin: PreHookHandlerType<Item> =
-    async (copy: Item, member: Member ) => {
-      const { path: copyPath } = copy;
+  // Prevent moving of `recycleBin` item
+  runner.setTaskPreHookHandler<Item>(itemTaskManager.getMoveTaskName(), async ({ id, type }) => {
+    if (type === RECYCLE_BIN_TYPE) throw new CannotMoveRecycleBin(id);
+  });
 
-      const { extra } = member;
-      const recycleBin = extra['recycleBin']
+  // Prevent deletion of `recycleBin` item
+  runner.setTaskPreHookHandler<Item>(itemTaskManager.getDeleteTaskName(), async ({ id, type }) => {
+    if (type === RECYCLE_BIN_TYPE) throw new CannotDeleteRecycleBin(id);
+  });
 
-      if(!recycleBin) return
+  // Prevent copying of `recycleBin` item
+  // Prevent copying into `recycleBin` item
+  runner.setTaskPreHookHandler<Item>(itemTaskManager.getCopyTaskName(),
+    async ({ id, type, path }, member: Member<RecycleExtra>) => {
+      if (type === RECYCLE_BIN_TYPE) throw new CannotCopyRecycleBin(id);
 
-      const recycleBinId = recycleBin['id'];
-      const getRecycleBinTask = itemTaskManager.createGetTask(member,recycleBinId);
-      const recycleBinItem = await runner.runSingle(getRecycleBinTask);
-      const { path: recycleBinPath } = recycleBinItem;
-      if(copyPath.includes(recycleBinPath)) throw new CopyToRecycleBin(copy.id)
+      const { extra: { recycleBin: { itemId: recycleBinItemId } = {} } } = member;
 
-    };
-  runner.setTaskPreHookHandler(itemTaskManager.getCopyTaskName(), preventCopyToRecycleBin);
+      if (!recycleBinItemId) return;
 
-  /**
-   * Check if the recycle bin is being created
-   * @param created Item copy (before being creation)
-   */
-  const preventCreationOfRecycleBin: PreHookHandlerType<Item> =
-    async (created: Item) => {
-      const { type } = created;
+      const recycleBinPath = recycleBinItemId.replace(/-/g, '_');
+      if (path.split('.').some(pathPart => pathPart === recycleBinPath)) throw new CannotCopyIntoRecycleBin(id);
+    });
 
-      if(type=== RECYCLE_BIN_TYPE) throw new CreateRecycleBin()
-    };
-  runner.setTaskPreHookHandler(itemTaskManager.getCreateTaskName(), preventCreationOfRecycleBin);
+  // Prevent creating memberships inside `recycleBin`
+  runner.setTaskPreHookHandler<ItemMembership>(itemMembershipTaskManager.getCreateTaskName(),
+    async ({ itemPath }, member: Member<RecycleExtra>) => {
 
-  /**
-   * Check if the recycle bin is being copied
-   * @param copy Item copy (before being saved)
-   */
-  const preventCopyOfRecycleBin: PreHookHandlerType<Item> =
-    async (copy: Item) => {
-      const { type } = copy;
+      const { extra: { recycleBin: { itemId: recycleBinItemId } = {} } } = member;
 
-      if(type=== RECYCLE_BIN_TYPE) throw new CopyRecycleBin()
-    };
-  runner.setTaskPreHookHandler(itemTaskManager.getCopyTaskName(), preventCopyOfRecycleBin);
+      if (!recycleBinItemId) return;
 
-  /**
-   * Check if the recycle bin is being moved
-   * @param move Item move (before being moved)
-   */
-  const preventMoveOfRecycleBin: PreHookHandlerType<Item> =
-    async (move: Item) => {
-      const { type } = move;
-
-      if(type=== RECYCLE_BIN_TYPE) throw new MoveRecycleBin()
-    };
-  runner.setTaskPreHookHandler(itemTaskManager.getMoveTaskName(), preventMoveOfRecycleBin);
-
-  /**
-   * Check if the recycle bin is being deleted
-   * @param deleted Item delete (before being deleted)
-   */
-  const preventDeleteRecycleBin: PreHookHandlerType<Item> =
-    async (deleted: Item) => {
-      const { type } = deleted;
-
-      if(type=== RECYCLE_BIN_TYPE) throw new DeleteRecycleBin()
-    };
-  runner.setTaskPreHookHandler(itemTaskManager.getDeleteTaskName(), preventDeleteRecycleBin);
-
-  /**
-   * Check if the recycle bin or it's content are being shared
-   * @param iM ItemMembership shared or updated (before being done)
-   * @param member Member triggering the create item membership task - used to get recycleBin
-   */
-  const preventSharingOperationsRecycleBin: PreHookHandlerType<ItemMembership> =
-    async (iM: ItemMembership, member: Member) => {
-      const { itemPath } = iM;
-
-      const { extra } = member;
-      const recycleBin = extra['recycleBin']
-
-      if(!recycleBin) return
-
-      const recycleBinId = recycleBin['id'];
-      const getRecycleBinTask = itemTaskManager.createGetTask(member,recycleBinId);
-      const recycleBinItem = await runner.runSingle(getRecycleBinTask);
-      const { path: recycleBinPath } = recycleBinItem;
-      if(itemPath.includes(recycleBinPath)) throw new ShareRecycleBinOrContent()
-    };
-  runner.setTaskPreHookHandler(itemMembershipTaskManager.getCreateTaskName(), preventSharingOperationsRecycleBin);
-  runner.setTaskPreHookHandler(itemMembershipTaskManager.getUpdateTaskName(), preventSharingOperationsRecycleBin);
-
-
-  fastify.post<{ Params: IdParam}> (
-    '/:id/recycle',
-    async ({member,params: {id: itemId},log})=> {
-
-      const itemTask = itemTaskManager.createGetTask(member,itemId);
-      const item = await runner.runSingle(itemTask,log);
-
-      const {extra, name,id: memberId} = member;
-      let recycleBin;
-      if(extra['recycleBin']){
-        const recycleBinId = extra['recycleBin']['id'];
-        const getRecycleBinTask = itemTaskManager.createGetTask(member,recycleBinId);
-        recycleBin = await runner.runSingle(getRecycleBinTask,log);
+      const recycleBinPath = recycleBinItemId.replace(/-/g, '_');
+      if (itemPath.split('.').some(pathPart => pathPart === recycleBinPath)) {
+        throw new CannotCreateItemMembershipInRecycleBin(recycleBinItemId);
       }
-      else{
-        const recycleBinItem = new BaseItem(
-          `${name}'s Recycle Bin`,
-          "Recycle Bin",
-          RECYCLE_BIN_TYPE,
-          {},
-          memberId);
-        const createRecycleBinTask = itemTaskManager.createCreateTask(member,recycleBinItem);
-        recycleBin = await runner.runSingle(createRecycleBinTask,log);
-        const extra = {
-          recycleBin: {
-            id: recycleBin.id
-          }
-        }
-        const updateMemberTask = memberTaskManager.createUpdateTask(member, memberId,{extra});
-        await runner.runSingle(updateMemberTask,log);
-      }
+    });
 
-      const removeItemMembershipsTask = itemMembershipTaskManager.createDeleteAllOnAndBelowItemTask(member,itemId);
-      await runner.runSingle(removeItemMembershipsTask,log);
-      const recycleTask = itemTaskManager.createMoveTask(member,item.id,recycleBin.id);
-      await runner.runSingle(recycleTask,log);
-      return recycleBin;
+  // Prevent changing own membership in `recycleBin`
+  runner.setTaskPreHookHandler<ItemMembership>(itemMembershipTaskManager.getUpdateTaskName(),
+    async ({ itemPath }, member: Member<RecycleExtra>) => {
+
+      const { extra: { recycleBin: { itemId: recycleBinItemId } = {} } } = member;
+
+      if (!recycleBinItemId) return;
+
+      const recycleBinPath = recycleBinItemId.replace(/-/g, '_');
+      if (itemPath === recycleBinPath) throw new CannotModifyOwnRecycleBinItemMembership();
+    });
+
+  // API endpoints
+
+  // recycle item
+  fastify.post<{ Params: IdParam }>(
+    '/:id/recycle', { schema: recycleOne },
+    async ({ member, params: { id: itemId }, log }, reply) => {
+      const recycleBinItemId = await getMemberRecyclebinId(member, log);
+
+      log.info(`Recycling item '${itemId}'`);
+      await recycleItem(itemId, member, recycleBinItemId, log);
+
+      reply.status(204);
     }
-  )
-}
+  );
+
+  // recycle multiple items
+  fastify.post<{ Querystring: IdsParams }>(
+    '/recycle', { schema: recycleMany(maxItemsInRequest) },
+    async ({ member, query: { id: ids }, log }, reply) => {
+      const recycleBinItemId = await getMemberRecyclebinId(member, log);
+
+      // too many items to recycle and wait for execution to finish: start execution and return 202.
+      if (ids.length > maxItemsWithResponse) {
+        log.info(`Recycling items ${ids}`);
+
+        for (let i = 0; i < ids.length; i++) {
+          recycleItem(ids[i], member, recycleBinItemId, log);
+        }
+        reply.status(202);
+        return ids;
+      }
+
+      log.info(`Recycling items ${ids}`);
+      for (let i = 0; i < ids.length; i++) {
+        await recycleItem(ids[i], member, recycleBinItemId, log);
+      }
+      reply.status(204);
+    }
+  );
+
+  async function getMemberRecyclebinId(member: Member<RecycleExtra>,
+    log: FastifyLoggerInstance): Promise<string> {
+    const { extra: { recycleBin: { itemId: recycleBinItemId } = {} } } = member;
+
+    if (recycleBinItemId) return recycleBinItemId;
+
+    // create the recycle bin item for this member
+    const recycleBinItem = { name: 'RECYCLEBIN', type: RECYCLE_BIN_TYPE };
+    const createItem = itemTaskManager.createCreateTask(member, recycleBinItem);
+    const { id: itemId } = await runner.runSingle(createItem, log);
+
+    // update member
+    const data = { extra: { recycleBin: { itemId } } };
+    const updateMember = memberTaskManager.createUpdateTask<RecycleExtra>(member, member.id, data);
+    await runner.runSingle(updateMember, log);
+  }
+
+  async function recycleItem(itemId: string, member: Member<RecycleExtra>,
+    recycleBinItemId: string, log: FastifyLoggerInstance): Promise<void> {
+
+    // TODO: this is not "perfect": the tasks are executing in a different transaction.
+
+    // remove all memberships from item (and its subtree)
+    const cleanItemMemeberships =
+      itemMembershipTaskManager.createDeleteAllOnAndBelowItemTask(member, itemId);
+    await runner.runSingle(cleanItemMemeberships, log);
+
+    // move item to the recycle bin
+    const moveItem = itemTaskManager.createMoveTask(member, itemId, recycleBinItemId);
+    await runner.runSingle(moveItem, log);
+  }
+};
 
 export default plugin;
