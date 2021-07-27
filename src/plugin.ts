@@ -113,7 +113,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
 
   // recycle multiple items
   fastify.post<{ Querystring: IdsParams }>(
-    '/move', { schema: recycleMany(maxItemsInRequest) },
+    '/recycle', { schema: recycleMany(maxItemsInRequest) },
     async ({ member, query: { id: ids }, log }, reply) => {
       const recycleBinItemId = await getMemberRecyclebinId(member, log);
 
