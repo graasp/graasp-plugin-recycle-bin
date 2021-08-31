@@ -3,7 +3,7 @@ const getRecycledItems = {
   response: {
     200: {
       type: 'array',
-      items: { $ref: 'http://graasp.org/items/#/definitions/item' }
+      // todo: use global schema to force response with item schema
     },
   }
 };
