@@ -1,3 +1,13 @@
+// schema for getting recycled items
+const getRecycledItems = {
+  response: {
+    200: {
+      type: 'array',
+      items: { $ref: 'http://graasp.org/items/#/definitions/item' }
+    },
+  }
+};
+
 // schema for recycling one item
 const recycleOne = {
   params: { $ref: 'http://graasp.org/#/definitions/idParam' }
@@ -15,6 +25,7 @@ const recycleMany = (maxItems: number) => ({
 });
 
 export {
+  getRecycledItems,
   recycleOne,
   recycleMany
 };

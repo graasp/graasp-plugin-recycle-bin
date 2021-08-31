@@ -15,7 +15,7 @@ import {
   CannotModifyOwnRecycleBinItemMembership,
   CannotMoveRecycleBin
 } from './graasp-recycle-bin-errors';
-import { recycleOne, recycleMany } from './schemas';
+import { recycleOne, recycleMany, getRecycledItems } from './schemas';
 
 interface RecycleExtra extends UnknownExtra {
   recycleBin?: { itemId: string }
@@ -99,8 +99,8 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   // API endpoints
 
   // get recycled items
-  fastify.post<{ Params: IdParam }>(
-    '/recycle', { schema: recycleOne },
+  fastify.get<{ Params: IdParam }>(
+    '/recycle', { schema: getRecycledItems },
     async ({ member, log }) => {
       // return children of recycle item
       const recycleBinItemId = await getMemberRecyclebinId(member, log);
