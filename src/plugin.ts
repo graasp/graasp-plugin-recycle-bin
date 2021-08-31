@@ -98,6 +98,18 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
 
   // API endpoints
 
+  // get recycled items
+  fastify.post<{ Params: IdParam }>(
+    '/recycle', { schema: recycleOne },
+    async ({ member, log }) => {
+      // return children of recycle item
+      const recycleBinItemId = await getMemberRecyclebinId(member, log);
+      const task = itemTaskManager.createGetChildrenTask(member, recycleBinItemId);
+
+      return runner.runSingle(task, log);
+    }
+  );
+
   // recycle item
   fastify.post<{ Params: IdParam }>(
     '/:id/recycle', { schema: recycleOne },
