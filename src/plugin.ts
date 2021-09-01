@@ -100,7 +100,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
 
   // get recycled items
   fastify.get<{ Params: IdParam }>(
-    '/recycle', { schema: getRecycledItems },
+    '/recycled', { schema: getRecycledItems },
     async ({ member, log }) => {
       // return children of recycle item
       const recycleBinItemId = await getMemberRecyclebinId(member, log);
