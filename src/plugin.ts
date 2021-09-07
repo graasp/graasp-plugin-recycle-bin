@@ -56,10 +56,12 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     if (type === RECYCLE_BIN_TYPE) throw new CannotDeleteRecycleBin(id);
   });
 
-  // Hide recycleBin when getting items
+  // Hide `recycleBin` when getting items if it exists
   runner.setTaskPostHookHandler<Item[]>(itemTaskManager.getGetOwnTaskName(), async(items) => {
     const bin = items.find(({ type }) => type === RECYCLE_BIN_TYPE);
-    items.splice(items.indexOf(bin), 1);
+    if (bin) {
+      items.splice(items.indexOf(bin), 1);
+    }
   });
 
   // Prevent copying of `recycleBin` item
