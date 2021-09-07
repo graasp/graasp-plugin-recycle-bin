@@ -15,7 +15,7 @@ import {
   CannotModifyOwnRecycleBinItemMembership,
   CannotMoveRecycleBin
 } from './graasp-recycle-bin-errors';
-import { recycleOne, recycleMany, getRecycledItems } from './schemas';
+import common, { recycleOne, recycleMany, getRecycledItems } from './schemas';
 
 interface RecycleExtra extends UnknownExtra {
   recycleBin?: { itemId: string }
@@ -43,6 +43,8 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     taskRunner: runner
   } = fastify;
   const { maxItemsInRequest = 10, maxItemsWithResponse = 5 } = options;
+
+  fastify.addSchema(common);
 
   // Hook handlers
 
