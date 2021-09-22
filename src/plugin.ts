@@ -72,7 +72,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     async ({ id, type, path }, member: Member<RecycleExtra>) => {
       if (type === RECYCLE_BIN_TYPE) throw new CannotCopyRecycleBin(id);
 
-      const { extra: { recycleBin: { itemId: recycleBinItemId } = {} } } = member;
+      const recycleBinItemId = member?.extra?.recycleBin?.itemId
 
       if (!recycleBinItemId) return;
 
@@ -84,7 +84,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   runner.setTaskPreHookHandler<ItemMembership>(itemMembershipTaskManager.getCreateTaskName(),
     async ({ itemPath }, member: Member<RecycleExtra>) => {
 
-      const { extra: { recycleBin: { itemId: recycleBinItemId } = {} } } = member;
+      const recycleBinItemId = member?.extra?.recycleBin?.itemId
 
       if (!recycleBinItemId) return;
 
@@ -98,7 +98,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   runner.setTaskPreHookHandler<ItemMembership>(itemMembershipTaskManager.getUpdateTaskName(),
     async ({ itemPath }, member: Member<RecycleExtra>) => {
 
-      const { extra: { recycleBin: { itemId: recycleBinItemId } = {} } } = member;
+      const recycleBinItemId = member?.extra?.recycleBin?.itemId
 
       if (!recycleBinItemId) return;
 
@@ -160,7 +160,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
 
   async function getMemberRecyclebinId(member: Member<RecycleExtra>,
     log: FastifyLoggerInstance): Promise<string> {
-    const { extra: { recycleBin: { itemId: recycleBinItemId } = {} } } = member;
+      const recycleBinItemId = member?.extra?.recycleBin?.itemId
 
     if (recycleBinItemId) return recycleBinItemId;
 
