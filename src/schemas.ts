@@ -38,6 +38,10 @@ const getRecycledItems = {
 const recycleOne = {
   params: { $ref: 'http://graasp.org/#/definitions/idParam' }
 };
+// schema for recycling one item
+const restoreOne = {
+  params: { $ref: 'http://graasp.org/#/definitions/idParam' }
+};
 
 // schema for recycling >1 items
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -53,5 +57,6 @@ const recycleMany = (maxItems: number) => ({
 export {
   getRecycledItems,
   recycleOne,
-  recycleMany
+  recycleMany,
+  restoreOne
 };
