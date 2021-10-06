@@ -1,31 +1,39 @@
 // global
-import { FastifyLoggerInstance } from 'fastify';
-import { DatabaseTransactionHandler, Item, ItemService, Member, MemberService } from 'graasp';
+import { DatabaseTransactionHandler, Item, Member } from 'graasp';
 import { RecycledItemService } from '../db-service';
+import { InvalidItemStatus } from '../graasp-recycle-bin-errors';
 import { BaseRecycleItemTask } from './base-task';
 
-type IsItemDeletedTaskInput = Partial<Item>
+type IsItemDeletedTaskInput = { item?: Partial<Item>; validate?: boolean };
 export class IsItemDeletedTask extends BaseRecycleItemTask<boolean> {
+  get name(): string {
+    return IsItemDeletedTask.name;
+  }
 
-    get name(): string {
-        return IsItemDeletedTask.name;
+  input: IsItemDeletedTaskInput;
+  getInput: () => IsItemDeletedTaskInput;
+
+  constructor(
+    member: Member,
+    recycleItemService: RecycledItemService,
+    input?: IsItemDeletedTaskInput,
+  ) {
+    super(member, recycleItemService);
+    this.input = input;
+  }
+
+  async run(handler: DatabaseTransactionHandler): Promise<void> {
+    this.status = 'RUNNING';
+
+    const { item, validate } = this.input;
+    const isDeleted = await this.recycleItemService.isDeleted(item.path, handler);
+
+    // if item should be validate, throw if it doesn't satisfy validate input
+    if (typeof validate === 'boolean') {
+      if (isDeleted !== validate) throw new InvalidItemStatus({item, isDeleted});
     }
 
-    input: IsItemDeletedTaskInput;
-    getInput: () => IsItemDeletedTaskInput
-
-    constructor(member: Member, recycleItemService: RecycledItemService,
-        itemService: ItemService, memberService: MemberService, input?: IsItemDeletedTaskInput) {
-        super(member, recycleItemService, itemService, memberService);
-        this.input = input
-    }
-
-    async run(handler: DatabaseTransactionHandler, log: FastifyLoggerInstance): Promise<void> {
-        this.status = 'RUNNING';
-
-        const isDeleted = await this.recycleItemService.isDeleted(this.input.path, handler);
-        console.log('isDeleted: ', this.input.path, isDeleted);
-        this._result = isDeleted
-        this.status = 'OK';
-    }
+    this._result = isDeleted;
+    this.status = 'OK';
+  }
 }

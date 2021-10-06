@@ -4,10 +4,7 @@ import { Item } from 'graasp';
 import { RecycledItemEntry } from './types';
 
 export class RecycledItemService {
-
-
-  constructor() {
-  }
+  constructor() {}
 
   // the 'safe' way to dynamically generate the columns names:
   private static allColumns = sql.join(
@@ -21,9 +18,9 @@ export class RecycledItemService {
       !Array.isArray(c)
         ? sql.identifier([c])
         : sql.join(
-          c.map((cwa) => sql.identifier([cwa])),
-          sql` AS `,
-        ),
+            c.map((cwa) => sql.identifier([cwa])),
+            sql` AS `,
+          ),
     ),
     sql`, `,
   );
@@ -33,12 +30,19 @@ export class RecycledItemService {
    * @param itemId Item id
    * @param transactionHandler Database transaction handler
    */
-  async create({ id, path }: Partial<Item>, creator: string, transactionHandler: TrxHandler): Promise<RecycledItemEntry> {
+  async create(
+    { id, path }: Partial<Item>,
+    creator: string,
+    transactionHandler: TrxHandler,
+  ): Promise<RecycledItemEntry> {
     return transactionHandler
-      .query<RecycledItemEntry>(sql`
+      .query<RecycledItemEntry>(
+        sql`
         INSERT INTO recycled_item (item_id, item_path, creator)
         VALUES (${id}, ${path}, ${creator})
-      `).then(({ rows }) => rows[0]);
+      `,
+      )
+      .then(({ rows }) => rows[0]);
   }
 
   /**
@@ -48,14 +52,15 @@ export class RecycledItemService {
    */
   async delete(itemId: string, transactionHandler: TrxHandler): Promise<RecycledItemEntry> {
     return transactionHandler
-      .query<RecycledItemEntry>(sql`
-        DELETE FROM recycled_item 
+      .query<RecycledItemEntry>(
+        sql`
+        DELETE FROM recycled_item
         WHERE item_id = ${itemId}
         RETURNING ${RecycledItemService.allColumns}
-      `)
+      `,
+      )
       .then(({ rows }) => rows[0]);
   }
-
 
   /**
    * Get `member`'s own recycled items (where member is `admin`)
@@ -82,23 +87,19 @@ export class RecycledItemService {
     );
   }
 
-
   /**
    * Get whether an item is deleted
    * @param transactionHandler Database transaction handler
    */
   async isDeleted(itemPath: string, transactionHandler: TrxHandler): Promise<boolean> {
-    return (
-      transactionHandler
-        .query<Item>(
-          sql`
+    return transactionHandler
+      .query<Item>(
+        sql`
         SELECT *
         FROM recycled_item
         WHERE item_path @> ${itemPath}
       `,
-        )
-        .then(({ rows }) => Boolean(rows.length))
-    );
+      )
+      .then(({ rows }) => Boolean(rows.length));
   }
-
 }

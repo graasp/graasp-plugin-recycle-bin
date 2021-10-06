@@ -1,32 +1,32 @@
 // global
-import { FastifyLoggerInstance } from 'fastify';
-import { DatabaseTransactionHandler, Item, ItemService, Member, MemberService } from 'graasp';
+import { DatabaseTransactionHandler, Item, Member } from 'graasp';
 import { RecycledItemService } from '../db-service';
 import { BaseRecycleItemTask } from './base-task';
 
-type CreateRecycledItemTaskInput = Partial<Item>
+type CreateRecycledItemTaskInput = Partial<Item>;
 export class CreateRecycledItemTask extends BaseRecycleItemTask<Item> {
+  get name(): string {
+    return CreateRecycledItemTask.name;
+  }
 
-    get name(): string {
-        return CreateRecycledItemTask.name;
-    }
+  input: CreateRecycledItemTaskInput;
+  getInput: () => CreateRecycledItemTaskInput;
 
+  constructor(
+    member: Member,
+    recycleItemService: RecycledItemService,
+    input?: CreateRecycledItemTaskInput,
+  ) {
+    super(member, recycleItemService);
+    this.input = input;
+  }
 
-    input: CreateRecycledItemTaskInput;
-    getInput: () => CreateRecycledItemTaskInput
+  async run(handler: DatabaseTransactionHandler): Promise<void> {
+    this.status = 'RUNNING';
 
-    constructor(member: Member, recycleItemService: RecycledItemService,
-        itemService: ItemService, memberService: MemberService, input?: CreateRecycledItemTaskInput) {
-        super(member, recycleItemService, itemService, memberService);
-        this.input = input
-    }
+    const { id: memberId } = this.actor;
+    await this.recycleItemService.create(this.input, memberId, handler);
 
-    async run(handler: DatabaseTransactionHandler, log: FastifyLoggerInstance): Promise<void> {
-        this.status = 'RUNNING';
-
-        const { id: memberId } = this.actor;
-        await this.recycleItemService.create(this.input, memberId, handler);
-
-        this.status = 'OK';
-    }
+    this.status = 'OK';
+  }
 }

@@ -2,7 +2,7 @@ import { GraaspErrorDetails, GraaspError } from 'graasp';
 
 export class GraaspItemTagsError implements GraaspError {
   name: string;
-  code: string
+  code: string;
   message: string;
   statusCode?: number;
   data?: unknown;
@@ -38,12 +38,39 @@ export class CannotDeleteRecycleItem extends GraaspItemTagsError {
 
 export class CannotCreateItemMembershipInRecycledItem extends GraaspItemTagsError {
   constructor(data?: unknown) {
-    super({ code: 'GRBERR005', statusCode: 400, message: 'Cannot create item memberships in recycle bin' }, data);
+    super(
+      {
+        code: 'GRBERR005',
+        statusCode: 400,
+        message: 'Cannot create item memberships in recycle bin',
+      },
+      data,
+    );
+  }
+}
+
+export class CannotUpdateItemMembershipInRecycledItem extends GraaspItemTagsError {
+  constructor(data?: unknown) {
+    super(
+      {
+        code: 'GRBERR006',
+        statusCode: 400,
+        message: 'Cannot update item memberships in recycle bin',
+      },
+      data,
+    );
   }
 }
 
 export class CannotGetRecycledItem extends GraaspItemTagsError {
   constructor(data?: unknown) {
-    super({ code: 'GRBERR006', statusCode: 400, message: 'Cannot get recycled item' }, data);
+    super({ code: 'GRBERR007', statusCode: 400, message: 'Cannot get recycled item' }, data);
+  }
+}
+
+
+export class InvalidItemStatus extends GraaspItemTagsError {
+  constructor(data?: unknown) {
+    super({ code: 'GRBERR008', statusCode: 400, message: 'Invalid item status' }, data);
   }
 }
