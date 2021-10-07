@@ -167,18 +167,18 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     // this will avoid checking the permission twice
     const t1 = itemTaskManager.createGetTaskSequence(member, itemId);
 
-    const t3 = itemMembershipTaskManager.createGetMemberItemMembershipTask(member);
-    t3.getInput = () => ({ validatePermission: 'admin', item: t1[0].result });
+    const t2 = itemMembershipTaskManager.createGetMemberItemMembershipTask(member);
+    t2.getInput = () => ({ validatePermission: 'admin', item: t1[0].result });
 
-    // todo: check item is not already deleted?
-    const t4 = recycledItemTaskManager.createIsDeletedTask(member as Member, { validate: true });
-    t4.getInput = () => ({ item: t1[0].result });
+    // check item is not already deleted
+    const t3 = recycledItemTaskManager.createIsDeletedTask(member as Member, { validate: false });
+    t3.getInput = () => ({ item: t1[0].result });
 
     // create entry in table
-    const t2 = recycledItemTaskManager.createCreateTask(member, {});
-    t2.getInput = () => t1[0].result;
+    const t4 = recycledItemTaskManager.createCreateTask(member, {});
+    t4.getInput = () => t1[0].result;
 
-    await runner.runSingleSequence([...t1, t3, t4, t2], log);
+    await runner.runSingleSequence([...t1, t2, t3, t4], log);
   }
 
   async function restoreItem(

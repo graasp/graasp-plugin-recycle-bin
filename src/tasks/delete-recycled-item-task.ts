@@ -26,7 +26,6 @@ export class DeleteRecycledItemTask extends BaseRecycleItemTask<RecycledItemEntr
   async run(handler: DatabaseTransactionHandler): Promise<void> {
     this.status = 'RUNNING';
 
-    // get member's "own" recycled items (member is admin and is in recycled items table)
     const result = await this.recycleItemService.delete(this.input, handler);
 
     this.status = 'OK';
