@@ -6,7 +6,7 @@ import {
   CannotMoveRecycledItem,
   CannotUpdateItemMembershipInRecycledItem,
 } from './graasp-recycle-bin-errors';
-import common, { recycleOne, recycleMany, getRecycledItems, restoreOne } from './schemas';
+import common, { recycleOne, recycleMany, getRecycledItems, restoreOne, restoreMany } from './schemas';
 import { TaskManager as RecycledItemTaskManager } from './task-manager';
 
 interface RecycleBinOptions {
@@ -101,11 +101,13 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   // API endpoints
 
   // get recycled items
-  fastify.get('/recycled', { schema: getRecycledItems }, async ({ member, log }) => {
-    // return children of recycle item
-    const task = recycledItemTaskManager.createGetOwnTask(member);
-    return runner.runSingle(task, log);
-  });
+  fastify.get<{ Params: IdParam }>(
+    '/recycled', { schema: getRecycledItems },
+    async ({ member, log }) => {
+      const task = recycledItemTaskManager.createGetOwnTask(member);
+      return runner.runSingle(task, log);
+    }
+  );
 
   // recycle item
   fastify.post<{ Params: IdParam }>(
@@ -155,7 +157,29 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     },
   );
 
+  // restore multiple items
+  fastify.post<{ Querystring: IdsParams }>(
+    '/restore', { schema: restoreMany(maxItemsInRequest) },
+    async ({ member, query: { id: ids }, log }, reply) => {
 
+      // too many items to recycle and wait for execution to finish: start execution and return 202.
+      if (ids.length > maxItemsWithResponse) {
+        log.info(`Restoring items ${ids}`);
+
+        for (let i = 0; i < ids.length; i++) {
+          restoreItem(ids[i], member, log);
+        }
+        reply.status(202);
+        return ids;
+      }
+
+      log.info(`Restoring items ${ids}`);
+      for (let i = 0; i < ids.length; i++) {
+        await restoreItem(ids[i], member, log);
+      }
+      reply.status(204);
+    }
+  );
 
   async function recycleItem(
     itemId: string,

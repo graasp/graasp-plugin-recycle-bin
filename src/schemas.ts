@@ -15,8 +15,8 @@ export default {
           additionalProperties: true,
         },
         creator: { type: 'string' },
-        createdAt: {},
-        updatedAt: {},
+        createdAt: { type: 'string' },
+        updatedAt: { type: 'string' }
       },
       additionalProperties: false,
     },
@@ -60,11 +60,11 @@ const getRecycledItems = {
 
 // schema for recycling one item
 const recycleOne = {
-  params: { $ref: 'http://graasp.org/#/definitions/idParam' },
+  params: { $ref: 'http://graasp.org/recycle-bin/#/definitions/idParam' },
 };
 // schema for recycling one item
 const restoreOne = {
-  params: { $ref: 'http://graasp.org/#/definitions/idParam' },
+  params: { $ref: 'http://graasp.org/recycle-bin/#/definitions/idParam' },
 };
 
 // schema for recycling >1 items
@@ -77,5 +77,21 @@ const recycleMany = (maxItems: number) => ({
     ],
   },
 });
+// schema for restoring>1 items
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+const restoreMany = (maxItems: number) => ({
+  querystring: {
+    allOf: [
+      { $ref: 'http://graasp.org/recycle-bin/#/definitions/idsQuery' },
+      { properties: { id: { maxItems } } }
+    ]
+  }
+});
 
-export { getRecycledItems, recycleOne, recycleMany, restoreOne };
+export {
+  getRecycledItems,
+  recycleOne,
+  recycleMany,
+  restoreOne,
+  restoreMany
+};

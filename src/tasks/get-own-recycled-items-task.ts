@@ -19,8 +19,6 @@ export class GetOwnRecycledItemsTask extends BaseRecycleItemTask<readonly Item[]
     // get member's "own" recycled items (created by member and where member is admin)
     const items = await this.recycleItemService.getOwn(this.actor.id, handler);
 
-    await this.postHookHandler?.(items, this.actor, { log, handler });
-
     this.status = 'OK';
     this._result = items;
   }

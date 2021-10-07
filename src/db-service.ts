@@ -25,6 +25,27 @@ export class RecycledItemService {
     sql`, `,
   );
 
+
+  private static allColumnsForJoins = sql.join(
+    [
+      [['item', 'id'], ['id']],
+      [['item', 'name'], ['name']],
+      [['item', 'description'], ['description']],
+      [['item', 'type'], ['type']],
+      [['item', 'path'], ['path']],
+      [['item', 'extra'], ['extra']],
+      [['item', 'creator'], ['creator']],
+      [['item', 'created_at'], ['createdAt']],
+      [['item', 'updated_at'], ['updatedAt']],
+    ].map((c) =>
+      sql.join(
+        c.map((cwa) => sql.identifier(cwa)),
+        sql` AS `,
+      ),
+    ),
+    sql`, `,
+  );
+
   /**
    * Create item-recycle bond in 'recycled_item' table
    * @param itemId Item id
@@ -72,14 +93,17 @@ export class RecycledItemService {
       transactionHandler
         .query<Item>(
           sql`
-        SELECT *
-        FROM item
-        INNER JOIN recycled_item ON recycled_item.item_id = item.id
-        INNER JOIN item_membership
-          ON item.path = item_membership.item_path
-        WHERE item_membership.member_id = ${memberId}
-          AND item_membership.permission = 'admin'
-          AND item.creator = ${memberId}
+          SELECT ${RecycledItemService.allColumnsForJoins}
+          FROM (
+            SELECT item_path, permission,
+              RANK() OVER (PARTITION BY subpath(item_path, 0, 1) ORDER BY item_path ASC) AS membership_rank
+            FROM item_membership
+            WHERE member_id = ${memberId}
+          ) AS t1
+          INNER JOIN item
+            ON  t1.item_path @> item.path
+          INNER JOIN recycled_item ON recycled_item.item_id = item.id
+          WHERE t1.membership_rank = 1
       `,
         )
         // TODO: is there a better way?

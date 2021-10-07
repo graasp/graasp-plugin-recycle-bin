@@ -388,7 +388,37 @@ describe('Plugin Tests', () => {
         expect(res.statusCode).toBe(StatusCodes.BAD_REQUEST);
       });
 
-      // tests are more exhaustive for task manager's createDeleteTask
+    });
+
+    describe('POST /restore', () => {
+      it('Successfully restore multiple items', async () => {
+        const app = await build({ itemTaskManager, itemMembershipTaskManager, runner });
+        const items = [ITEM_FOLDER, ITEM_FILE];
+
+        jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
+
+        const response = await app.inject({
+          method: 'POST',
+          url: `/restore?${qs.stringify(
+            { id: items.map(({ id }) => id) },
+            { arrayFormat: 'repeat' },
+          )}`,
+        });
+
+        expect(response.statusCode).toBe(StatusCodes.NO_CONTENT);
+      });
+
+      it('Bad request for invalid id', async () => {
+        const app = await build({ itemTaskManager, itemMembershipTaskManager, runner });
+
+        const res = await app.inject({
+          method: 'POST',
+          url: `/restore?${qs.stringify({ id: ['invalid', 'invalid-id'] })}`,
+        });
+
+        expect(res.statusCode).toBe(StatusCodes.BAD_REQUEST);
+      });
+
     });
   });
 });
