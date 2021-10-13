@@ -8,9 +8,7 @@ import { RecycledItemService } from '../src/db-service';
 import { mockCreateGetMemberItemMembershipTask, mockGetTaskSequence } from './mocks';
 import {
   CannotCopyRecycledItem,
-  CannotCreateItemMembershipInRecycledItem,
   CannotMoveRecycledItem,
-  CannotUpdateItemMembershipInRecycledItem,
 } from '../src/graasp-recycle-bin-errors';
 import { Item } from 'graasp';
 
@@ -85,72 +83,6 @@ describe('Plugin Tests', () => {
               .mockImplementation(async () => true);
             jest.spyOn(runner, 'runSingle').mockImplementation(async () => false);
             expect(fn(item, actor, { log: undefined })).resolves;
-          }
-        });
-
-        await build({ itemTaskManager, runner, itemMembershipTaskManager });
-      });
-    });
-
-    describe('Create Memberships Pre Hook Handler', () => {
-      it('Prevent create memberships on recycled items', async () => {
-        jest.spyOn(runner, 'setTaskPostHookHandler').mockImplementation(async () => false);
-        jest.spyOn(runner, 'setTaskPreHookHandler').mockImplementation(async (name, fn) => {
-          if (name === itemMembershipTaskManager.getCreateTaskName()) {
-            jest
-              .spyOn(RecycledItemService.prototype, 'isDeleted')
-              .mockImplementation(async () => true);
-            jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
-            expect(fn({ itemPath: item.path }, actor, { log: undefined })).rejects.toEqual(
-              new CannotCreateItemMembershipInRecycledItem(item.path),
-            );
-          }
-        });
-
-        await build({ itemTaskManager, runner, itemMembershipTaskManager });
-      });
-      it('Continue create memberships for non-recycled items', async () => {
-        jest.spyOn(runner, 'setTaskPostHookHandler').mockImplementation(async () => false);
-        jest.spyOn(runner, 'setTaskPreHookHandler').mockImplementation(async (name, fn) => {
-          if (name === itemMembershipTaskManager.getCreateTaskName()) {
-            jest
-              .spyOn(RecycledItemService.prototype, 'isDeleted')
-              .mockImplementation(async () => true);
-            jest.spyOn(runner, 'runSingle').mockImplementation(async () => false);
-            expect(fn({ itemPath: item.path }, actor, { log: undefined })).resolves;
-          }
-        });
-
-        await build({ itemTaskManager, runner, itemMembershipTaskManager });
-      });
-    });
-
-    describe('Update Memberships Pre Hook Handler', () => {
-      it('Prevent update memberships on recycled items', async () => {
-        jest.spyOn(runner, 'setTaskPostHookHandler').mockImplementation(async () => false);
-        jest.spyOn(runner, 'setTaskPreHookHandler').mockImplementation(async (name, fn) => {
-          if (name === itemMembershipTaskManager.getUpdateTaskName()) {
-            jest
-              .spyOn(RecycledItemService.prototype, 'isDeleted')
-              .mockImplementation(async () => true);
-            jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
-            expect(fn({ itemPath: item.path }, actor, { log: undefined })).rejects.toEqual(
-              new CannotUpdateItemMembershipInRecycledItem(item.path),
-            );
-          }
-        });
-
-        await build({ itemTaskManager, runner, itemMembershipTaskManager });
-      });
-      it('Continue update memberships for non-recycled items', async () => {
-        jest.spyOn(runner, 'setTaskPostHookHandler').mockImplementation(async () => false);
-        jest.spyOn(runner, 'setTaskPreHookHandler').mockImplementation(async (name, fn) => {
-          if (name === itemMembershipTaskManager.getUpdateTaskName()) {
-            jest
-              .spyOn(RecycledItemService.prototype, 'isDeleted')
-              .mockImplementation(async () => true);
-            jest.spyOn(runner, 'runSingle').mockImplementation(async () => false);
-            expect(fn({ itemPath: item.path }, actor, { log: undefined })).resolves;
           }
         });
 

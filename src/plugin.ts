@@ -2,9 +2,7 @@ import { FastifyLoggerInstance, FastifyPluginAsync } from 'fastify';
 import { Actor, IdParam, IdsParams, Item, ItemMembership, Member } from 'graasp';
 import {
   CannotCopyRecycledItem,
-  CannotCreateItemMembershipInRecycledItem,
   CannotMoveRecycledItem,
-  CannotUpdateItemMembershipInRecycledItem,
 } from './graasp-recycle-bin-errors';
 import common, { recycleOne, recycleMany, getRecycledItems, restoreOne, restoreMany } from './schemas';
 import { TaskManager as RecycledItemTaskManager } from './task-manager';
@@ -33,7 +31,6 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
 
   fastify.addSchema(common);
 
-
   const removeRecycledItems = async (items, actor, log) => {
     const filteredItems = await Promise.all(
       items.map(async (item) => {
@@ -61,16 +58,6 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     },
   );
 
-  // Prevent creating memberships inside a recycled item
-  runner.setTaskPreHookHandler<ItemMembership>(
-    itemMembershipTaskManager.getCreateTaskName(),
-    async ({ itemPath }, actor, { log }) => {
-      if (await isRecycledItem(itemPath, actor, log)) {
-        throw new CannotCreateItemMembershipInRecycledItem(itemPath);
-      }
-    },
-  );
-
   // Hide recycled items when getting items if it exists
   runner.setTaskPostHookHandler<Item[]>(
     itemTaskManager.getGetOwnTaskName(),
@@ -88,6 +75,10 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   );
 
   // Do not hide item when getting one -> otherwise we cannot delete
+
+  // Note: it's okay to not prevent memberships changes on recycled items
+  // it is not really possible to change them in the interface
+  // but it won't break anything
 
   // API endpoints
 

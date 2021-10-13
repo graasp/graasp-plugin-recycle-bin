@@ -36,31 +36,6 @@ export class CannotDeleteRecycleItem extends GraaspItemTagsError {
   }
 }
 
-export class CannotCreateItemMembershipInRecycledItem extends GraaspItemTagsError {
-  constructor(data?: unknown) {
-    super(
-      {
-        code: 'GRBERR005',
-        statusCode: 400,
-        message: 'Cannot create item memberships in recycle bin',
-      },
-      data,
-    );
-  }
-}
-
-export class CannotUpdateItemMembershipInRecycledItem extends GraaspItemTagsError {
-  constructor(data?: unknown) {
-    super(
-      {
-        code: 'GRBERR006',
-        statusCode: 400,
-        message: 'Cannot update item memberships in recycle bin',
-      },
-      data,
-    );
-  }
-}
 
 export class CannotGetRecycledItem extends GraaspItemTagsError {
   constructor(data?: unknown) {
