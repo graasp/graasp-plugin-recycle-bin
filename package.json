@@ -1,5 +1,5 @@
 {
-  "name": "graasp-recycle-bin",
+  "name": "graasp-plugin-recycle-bin",
   "version": "0.1.0",
   "description": "Recycle Bin Plugin",
   "main": "dist/plugin.js",
