@@ -71,15 +71,6 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     },
   );
 
-  // Prevent changing own membership in a recycled item
-  runner.setTaskPreHookHandler<ItemMembership>(
-    itemMembershipTaskManager.getUpdateTaskName(),
-    async ({ itemPath }, actor, { log }) => {
-      if (await isRecycledItem(itemPath, actor, log))
-        throw new CannotUpdateItemMembershipInRecycledItem(itemPath);
-    },
-  );
-
   // Hide recycled items when getting items if it exists
   runner.setTaskPostHookHandler<Item[]>(
     itemTaskManager.getGetOwnTaskName(),
