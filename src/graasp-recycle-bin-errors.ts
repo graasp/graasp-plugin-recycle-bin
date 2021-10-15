@@ -2,7 +2,7 @@ import { GraaspErrorDetails, GraaspError } from 'graasp';
 
 export class GraaspItemTagsError implements GraaspError {
   name: string;
-  code: string
+  code: string;
   message: string;
   statusCode?: number;
   data?: unknown;
@@ -18,38 +18,34 @@ export class GraaspItemTagsError implements GraaspError {
   }
 }
 
-export class CannotCopyIntoRecycleBin extends GraaspItemTagsError {
+export class CannotCopyRecycledItem extends GraaspItemTagsError {
   constructor(data?: unknown) {
-    super({ code: 'GRBERR001', statusCode: 400, message: 'Cannot copy items into recycle bin item' }, data);
+    super({ code: 'GRBERR002', statusCode: 400, message: 'Cannot copy recycled item' }, data);
   }
 }
 
-export class CannotCopyRecycleBin extends GraaspItemTagsError {
+export class CannotMoveRecycledItem extends GraaspItemTagsError {
   constructor(data?: unknown) {
-    super({ code: 'GRBERR002', statusCode: 400, message: 'Cannot copy recycle bin item' }, data);
+    super({ code: 'GRBERR003', statusCode: 400, message: 'Cannot move recycled item' }, data);
   }
 }
 
-export class CannotMoveRecycleBin extends GraaspItemTagsError {
+export class CannotDeleteRecycleItem extends GraaspItemTagsError {
   constructor(data?: unknown) {
-    super({ code: 'GRBERR003', statusCode: 400, message: 'Cannot move recycle bin item' }, data);
+    super({ code: 'GRBERR004', statusCode: 400, message: 'Cannot delete recycled item' }, data);
   }
 }
 
-export class CannotDeleteRecycleBin extends GraaspItemTagsError {
+
+export class CannotGetRecycledItem extends GraaspItemTagsError {
   constructor(data?: unknown) {
-    super({ code: 'GRBERR004', statusCode: 400, message: 'Cannot delete recycle bin item' }, data);
+    super({ code: 'GRBERR007', statusCode: 400, message: 'Cannot get recycled item' }, data);
   }
 }
 
-export class CannotCreateItemMembershipInRecycleBin extends GraaspItemTagsError {
-  constructor(data?: unknown) {
-    super({ code: 'GRBERR005', statusCode: 400, message: 'Cannot create item memberships in recycle bin' }, data);
-  }
-}
 
-export class CannotModifyOwnRecycleBinItemMembership extends GraaspItemTagsError {
+export class InvalidItemStatus extends GraaspItemTagsError {
   constructor(data?: unknown) {
-    super({ code: 'GRBERR006', statusCode: 400, message: 'Cannot modify own recycle bin item membership ' }, data);
+    super({ code: 'GRBERR008', statusCode: 400, message: 'Invalid item status' }, data);
   }
 }

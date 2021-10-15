@@ -24,3 +24,4 @@ types
 
 # ignore yarn.lock
 yarn.lock
+coverage
