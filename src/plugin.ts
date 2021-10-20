@@ -60,7 +60,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   );
 
   // Prevent getting recycled item
-  runner.setTaskPreHookHandler<Item>(
+  runner.setTaskPostHookHandler<Item>(
     itemTaskManager.getGetTaskName(),
     async ({ id, path }, actor, { log }) => {
       if (await isRecycledItem(path, actor, log)) throw new CannotGetRecycledItem(id);
