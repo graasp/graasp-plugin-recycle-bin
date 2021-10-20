@@ -2,6 +2,7 @@ import { FastifyLoggerInstance, FastifyPluginAsync } from 'fastify';
 import { Actor, IdParam, IdsParams, Item, ItemMembership, Member } from 'graasp';
 import {
   CannotCopyRecycledItem,
+  CannotGetRecycledItem,
   CannotMoveRecycledItem,
 } from './graasp-recycle-bin-errors';
 import common, { recycleOne, recycleMany, getRecycledItems, restoreOne, restoreMany } from './schemas';
@@ -58,6 +59,14 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     },
   );
 
+  // Prevent getting recycled item
+  runner.setTaskPreHookHandler<Item>(
+    itemTaskManager.getGetTaskName(),
+    async ({ id, path }, actor, { log }) => {
+      if (await isRecycledItem(path, actor, log)) throw new CannotGetRecycledItem(id);
+    },
+  );
+
   // Hide recycled items when getting items if it exists
   runner.setTaskPostHookHandler<Item[]>(
     itemTaskManager.getGetOwnTaskName(),
@@ -73,8 +82,6 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
       await removeRecycledItems(items, actor, log);
     },
   );
-
-  // Do not hide item when getting one -> otherwise we cannot delete
 
   // Note: it's okay to not prevent memberships changes on recycled items
   // it is not really possible to change them in the interface
