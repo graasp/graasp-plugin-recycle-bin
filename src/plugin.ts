@@ -5,7 +5,15 @@ import {
   CannotGetRecycledItem,
   CannotMoveRecycledItem,
 } from './graasp-recycle-bin-errors';
-import common, { recycleOne, recycleMany, getRecycledItems, restoreOne, restoreMany } from './schemas';
+import common, {
+  recycleOne,
+  recycleMany,
+  getRecycledItems,
+  restoreOne,
+  restoreMany,
+  deleteOne,
+  deleteMany,
+} from './schemas';
 import { TaskManager as RecycledItemTaskManager } from './task-manager';
 
 interface RecycleBinOptions {
@@ -91,11 +99,12 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
 
   // get recycled items
   fastify.get<{ Params: IdParam }>(
-    '/recycled', { schema: getRecycledItems },
+    '/recycled',
+    { schema: getRecycledItems },
     async ({ member, log }) => {
       const task = recycledItemTaskManager.createGetOwnTask(member);
       return runner.runSingle(task, log);
-    }
+    },
   );
 
   // recycle item
@@ -148,9 +157,9 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
 
   // restore multiple items
   fastify.post<{ Querystring: IdsParams }>(
-    '/restore', { schema: restoreMany(maxItemsInRequest) },
+    '/restore',
+    { schema: restoreMany(maxItemsInRequest) },
     async ({ member, query: { id: ids }, log }, reply) => {
-
       // too many items to recycle and wait for execution to finish: start execution and return 202.
       if (ids.length > maxItemsWithResponse) {
         log.info(`Restoring items ${ids}`);
@@ -167,24 +176,54 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
         await restoreItem(ids[i], member, log);
       }
       reply.status(204);
-    }
+    },
   );
 
-
-  // restore one item
+  // delete a recycled item
   fastify.delete<{ Params: IdParam }>(
     '/:id/delete',
-    { schema: restoreOne },
+    { schema: deleteOne },
     async ({ member, params: { id }, log }) => {
-      const t1 = recycledItemTaskManager.createGetItemTask(member, itemService, { itemId: id })
+      const tasks = recycledItemTaskManager.createDeleteTaskSequence(
+        member,
+        itemTaskManager,
+        itemMembershipTaskManager,
+        itemService,
+        id,
+      );
 
-      const t2 = itemMembershipTaskManager.createGetMemberItemMembershipTask(member, {});
-      t2.getInput = () => ({ validatePermission: 'admin', item: t1.result })
+      return runner.runSingleSequence(tasks, log);
+    },
+  );
 
-      const t3 = itemTaskManager.createDeleteTask(member);
-      t3.getInput = () => ({ item: t1.result })
+  // delete recycled items
+  fastify.delete<{ Querystring: IdsParams }>(
+    '/delete',
+    { schema: deleteMany(maxItemsInRequest) },
+    async ({ member, query: { id: ids }, log }, reply) => {
+      const tasks = ids.map((id) =>
+        recycledItemTaskManager.createDeleteTaskSequence(
+          member,
+          itemTaskManager,
+          itemMembershipTaskManager,
+          itemService,
+          id,
+        ),
+      );
 
-      return runner.runSingleSequence([t1, t2, t3], log)
+      if (ids.length > maxItemsWithResponse) {
+        log.info(`Deleting recycled items ${ids}`);
+
+        for (let i = 0; i < ids.length; i++) {
+          runner.runMultipleSequences(tasks, log);
+        }
+        reply.status(202);
+        return ids;
+      }
+
+      log.info(`Deleting recycled items ${ids}`);
+      await runner.runMultipleSequences(tasks, log);
+      reply.status(204);
     },
   );
 

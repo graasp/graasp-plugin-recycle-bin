@@ -5,9 +5,14 @@ import { StatusCodes } from 'http-status-codes';
 import { GRAASP_ACTOR, ITEMS, ITEM_FILE, ITEM_FOLDER } from './constants';
 import build from './app';
 import { RecycledItemService } from '../src/db-service';
-import { mockCreateGetMemberItemMembershipTask, mockGetTaskSequence } from './mocks';
+import {
+  mockCreateGetMemberItemMembershipTask,
+  mockDeleteTask,
+  mockGetTaskSequence,
+} from './mocks';
 import {
   CannotCopyRecycledItem,
+  CannotGetRecycledItem,
   CannotMoveRecycledItem,
 } from '../src/graasp-recycle-bin-errors';
 import { Item } from 'graasp';
@@ -130,6 +135,43 @@ describe('Plugin Tests', () => {
             await fn(items, actor, { log: undefined });
             expect(items.length).toEqual(ITEMS.length - 1);
             expect(items).toEqual(ITEMS.slice(1));
+          }
+        });
+
+        await build({ itemTaskManager, runner, itemMembershipTaskManager });
+      });
+    });
+    describe('Get Item Post Hook Handler', () => {
+      it('Throw error if item is recycled', async () => {
+        jest.spyOn(runner, 'setTaskPreHookHandler').mockImplementation(async () => false);
+        jest.spyOn(runner, 'setTaskPostHookHandler').mockImplementation(async (name, fn) => {
+          const deletedItem = ITEM_FOLDER;
+          if (name === itemTaskManager.getGetTaskName()) {
+            // only folder item is deleted
+            jest
+              .spyOn(RecycledItemService.prototype, 'isDeleted')
+              .mockImplementation(async () => true);
+            jest.spyOn(runner, 'runSingle').mockImplementation(async (task) => {
+              return true;
+            });
+            expect(fn(deletedItem, actor, { log: undefined })).rejects.toEqual(
+              new CannotGetRecycledItem(deletedItem.id),
+            );
+          }
+        });
+
+        await build({ itemTaskManager, runner, itemMembershipTaskManager });
+      });
+
+      it('Continue get for non-recycled item', async () => {
+        jest.spyOn(runner, 'setTaskPostHookHandler').mockImplementation(async () => false);
+        jest.spyOn(runner, 'setTaskPreHookHandler').mockImplementation(async (name, fn) => {
+          if (name === itemTaskManager.getGetTaskName()) {
+            jest
+              .spyOn(RecycledItemService.prototype, 'isDeleted')
+              .mockImplementation(async () => true);
+            jest.spyOn(runner, 'runSingle').mockImplementation(async () => false);
+            expect(fn(item, actor, { log: undefined })).resolves;
           }
         });
 
@@ -319,7 +361,6 @@ describe('Plugin Tests', () => {
 
         expect(res.statusCode).toBe(StatusCodes.BAD_REQUEST);
       });
-
     });
 
     describe('POST /restore', () => {
@@ -350,7 +391,116 @@ describe('Plugin Tests', () => {
 
         expect(res.statusCode).toBe(StatusCodes.BAD_REQUEST);
       });
+    });
 
+    describe('DELETE /:id/delete', () => {
+      it('Successfully delete a recycled item', async () => {
+        const app = await build({ itemTaskManager, itemMembershipTaskManager, runner });
+        const item = ITEM_FOLDER;
+
+        jest.spyOn(runner, 'runSingleSequence').mockImplementation(async () => item);
+        mockCreateGetMemberItemMembershipTask(item);
+        mockDeleteTask(item);
+
+        const response = await app.inject({
+          method: 'DELETE',
+          url: `${item.id}/delete`,
+        });
+
+        expect(response.statusCode).toBe(StatusCodes.OK);
+        // the following check is not really meaningful since the value comes from a mock
+        expect(response.json()).toEqual(item);
+      });
+
+      it('Bad request for invalid id', async () => {
+        const app = await build({ itemTaskManager, itemMembershipTaskManager, runner });
+
+        const res = await app.inject({
+          method: 'DELETE',
+          url: `invalid-id/delete`,
+        });
+
+        expect(res.statusCode).toBe(StatusCodes.BAD_REQUEST);
+      });
+    });
+
+
+    describe('DELETE /delete', () => {
+      it('Successfully delete multiple items', async () => {
+        const app = await build({ itemTaskManager, itemMembershipTaskManager, runner });
+        const items = [ITEM_FOLDER, ITEM_FILE];
+
+        jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
+        const mock = mockCreateGetMemberItemMembershipTask(items[0])
+        mockDeleteTask(items[0])
+        jest.spyOn(runner, 'runMultipleSequences').mockImplementation(async () => items);
+
+        const response = await app.inject({
+          method: 'DELETE',
+          url: `/delete?${qs.stringify(
+            { id: items.map(({ id }) => id) },
+            { arrayFormat: 'repeat' },
+          )}`,
+        });
+        expect(response.statusCode).toBe(StatusCodes.NO_CONTENT);
+        expect(mock).toHaveBeenCalledTimes(items.length)
+      });
+
+
+      it('Returns 202 when deleting many items', async () => {
+        const app = await build({
+          itemTaskManager,
+          itemMembershipTaskManager,
+          runner,
+          options: { maxItemsWithResponse: 1 },
+        });
+        const items = [ITEM_FOLDER, ITEM_FILE];
+
+        jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
+        const mock = mockCreateGetMemberItemMembershipTask(items[0])
+        mockDeleteTask(items[0])
+        jest.spyOn(runner, 'runMultipleSequences').mockImplementation(async () => items);
+
+        const res = await app.inject({
+          method: 'DELETE',
+          url: `/delete?${qs.stringify(
+            { id: items.map(({ id }) => id) },
+            { arrayFormat: 'repeat' },
+          )}`,
+        });
+        expect(res.statusCode).toBe(StatusCodes.ACCEPTED);
+        expect(mock).toHaveBeenCalledTimes(2);
+      });
+
+      it('Bad request if recycle more than maxItemsInRequest items', async () => {
+        const app = await build({
+          itemTaskManager,
+          itemMembershipTaskManager,
+          runner,
+          options: { maxItemsInRequest: 1 },
+        });
+        const items = [ITEM_FOLDER, ITEM_FILE];
+
+        const res = await app.inject({
+          method: 'DELETE',
+          url: `/delete?${qs.stringify(
+            { id: items.map(({ id }) => id) },
+            { arrayFormat: 'repeat' },
+          )}`,
+        });
+        expect(res.statusCode).toBe(StatusCodes.BAD_REQUEST);
+      });
+
+      it('Bad request for invalid id', async () => {
+        const app = await build({ itemTaskManager, itemMembershipTaskManager, runner });
+
+        const res = await app.inject({
+          method: 'DELETE',
+          url: `/delete?${qs.stringify({ id: ['invalid', 'invalid-id'] })}`,
+        });
+
+        expect(res.statusCode).toBe(StatusCodes.BAD_REQUEST);
+      });
     });
   });
 });
