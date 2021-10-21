@@ -1,5 +1,5 @@
 import { FastifyLoggerInstance, FastifyPluginAsync } from 'fastify';
-import { Actor, IdParam, IdsParams, Item, ItemMembership, Member } from 'graasp';
+import { Actor, IdParam, IdsParams, Item, ItemMembership, Member, PermissionLevel } from 'graasp';
 import {
   CannotCopyRecycledItem,
   CannotGetRecycledItem,
@@ -168,6 +168,23 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
       }
       reply.status(204);
     }
+  );
+
+
+  // restore one item
+  fastify.delete<{ Params: IdParam }>(
+    '/:id/delete-recycled',
+    { schema: restoreOne },
+    async ({ member, params: { id }, log }) => {
+      const t1 = itemTaskManager.createGetTask(member, id) // get item just comme ça
+
+      const t2 = itemMembershipTaskManager.createGetMemberItemMembershipTask(member, {});
+      t2.getInput = () => ({ validatePermission: PermissionLevel.Admin, item: t1.result })
+
+      const t3 = itemTaskManager.createDeleteTask(member, id);
+
+      return runner.runSingleSequence([t1, t2, t3], log)
+    },
   );
 
   async function recycleItem(
