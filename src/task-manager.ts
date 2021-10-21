@@ -1,8 +1,9 @@
-import { Item, Member } from 'graasp';
+import { Item, ItemService, Member } from 'graasp';
 import { RecycledItemService } from './db-service';
 import { RecycledItemTaskManager } from './interfaces/task-manager';
 import { CreateRecycledItemTask } from './tasks/create-recycled-item-task';
 import { DeleteRecycledItemTask } from './tasks/delete-recycled-item-task';
+import { GetItemTask, GetItemTaskInputType } from './tasks/get-item-task';
 import { GetOwnRecycledItemsTask } from './tasks/get-own-recycled-items-task';
 import { IsItemDeletedTask } from './tasks/is-item-deleted-task';
 
@@ -14,7 +15,7 @@ export class TaskManager implements RecycledItemTaskManager<Member> {
   }
 
   createGetOwnTask(member: Member): GetOwnRecycledItemsTask {
-    return new GetOwnRecycledItemsTask(member, this.recycledItemService, );
+    return new GetOwnRecycledItemsTask(member, this.recycledItemService,);
   }
 
   getCreateTaskName(): string {
@@ -34,7 +35,10 @@ export class TaskManager implements RecycledItemTaskManager<Member> {
   getIsDeletedTaskName(): string {
     return DeleteRecycledItemTask.name;
   }
-  createIsDeletedTask(member: Member, input?: {item?: Partial<Item>, validate?: boolean}): IsItemDeletedTask {
+  createIsDeletedTask(member: Member, input?: { item?: Partial<Item>, validate?: boolean }): IsItemDeletedTask {
     return new IsItemDeletedTask(member, this.recycledItemService, input);
+  }
+  createGetItemTask(member: Member, itemService: ItemService, input?: GetItemTaskInputType): GetItemTask {
+    return new GetItemTask(member, this.recycledItemService, itemService, input);
   }
 }
