@@ -173,7 +173,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
 
   // restore one item
   fastify.delete<{ Params: IdParam }>(
-    '/:id/delete-recycled',
+    '/:id/delete',
     { schema: restoreOne },
     async ({ member, params: { id }, log }) => {
       const t1 = itemTaskManager.createGetTask(member, id) // get item just comme ça
