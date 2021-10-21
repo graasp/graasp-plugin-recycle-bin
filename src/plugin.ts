@@ -176,12 +176,13 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     '/:id/delete',
     { schema: restoreOne },
     async ({ member, params: { id }, log }) => {
-      const t1 = recycledItemTaskManager.createGetItemTask(member, itemService, { itemId: id }) // get item just comme ça
+      const t1 = recycledItemTaskManager.createGetItemTask(member, itemService, { itemId: id })
 
       const t2 = itemMembershipTaskManager.createGetMemberItemMembershipTask(member, {});
       t2.getInput = () => ({ validatePermission: 'admin', item: t1.result })
 
-      const t3 = itemTaskManager.createDeleteTask(member, id);
+      const t3 = itemTaskManager.createDeleteTask(member);
+      t3.getInput = () => ({ item: t1.result })
 
       return runner.runSingleSequence([t1, t2, t3], log)
     },

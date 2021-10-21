@@ -28,8 +28,8 @@ export class GetItemTask extends BaseRecycleItemTask<Item> {
         this.status = 'RUNNING';
 
         const { itemId } = this.input;
-        await this.itemService.get(itemId, handler);
 
+        this._result = await this.itemService.get(itemId, handler);
         this.status = 'OK';
     }
 }

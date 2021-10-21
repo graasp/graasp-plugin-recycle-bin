@@ -37,7 +37,7 @@
     "@typescript-eslint/parser": "^4.28.2",
     "eslint": "^7.30.0",
     "fastify": "^3.8.0",
-    "graasp-test": "git://github.com/graasp/graasp-test#main",
+    "graasp-test": "git://github.com/graasp/graasp-test#update",
     "prettier": "^2.4.1",
     "qs": "^6.10.1",
     "slonik": "^23.0.2",
