@@ -442,7 +442,7 @@ describe('Plugin Tests', () => {
             { arrayFormat: 'repeat' },
           )}`,
         });
-        expect(response.statusCode).toBe(StatusCodes.NO_CONTENT);
+        expect(response.statusCode).toBe(StatusCodes.OK);
         expect(mock).toHaveBeenCalledTimes(items.length)
       });
 

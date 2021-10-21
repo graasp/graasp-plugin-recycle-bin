@@ -222,8 +222,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
       }
 
       log.info(`Deleting recycled items ${ids}`);
-      await runner.runMultipleSequences(tasks, log);
-      reply.status(204);
+      return runner.runMultipleSequences(tasks, log);
     },
   );
 
