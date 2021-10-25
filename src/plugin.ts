@@ -75,9 +75,17 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     },
   );
 
-  // Hide recycled items when getting items if it exists
+  // Hide recycled items when getting own items 
   runner.setTaskPostHookHandler<Item[]>(
     itemTaskManager.getGetOwnTaskName(),
+    async (items, actor, { log }) => {
+      await removeRecycledItems(items, actor, log);
+    },
+  );
+
+  // Hide recycled items when getting shared items 
+  runner.setTaskPostHookHandler<Item[]>(
+    itemTaskManager.getGetSharedWithTaskName(),
     async (items, actor, { log }) => {
       await removeRecycledItems(items, actor, log);
     },
