@@ -36,13 +36,11 @@ export class CannotDeleteRecycleItem extends GraaspItemTagsError {
   }
 }
 
-
 export class CannotGetRecycledItem extends GraaspItemTagsError {
   constructor(data?: unknown) {
     super({ code: 'GRBERR007', statusCode: 400, message: 'Cannot get recycled item' }, data);
   }
 }
-
 
 export class InvalidItemStatus extends GraaspItemTagsError {
   constructor(data?: unknown) {

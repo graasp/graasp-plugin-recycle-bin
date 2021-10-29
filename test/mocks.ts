@@ -24,13 +24,29 @@ export const mockGetTaskSequence = (
   return mockCreateTask;
 };
 
+export const mockDeleteTask = (
+  data: Partial<Item> | Error,
+  shouldThrow?: boolean,
+): jest.SpyInstance => {
+  const mockTask = jest
+    .spyOn(MockItemTaskManager.prototype, 'createDeleteTask')
+    .mockImplementation(() => {
+      return new MockTask(data);
+    });
+  jest.spyOn(MockTaskRunner.prototype, 'runSingleSequence').mockImplementation(async () => {
+    if (shouldThrow) throw data;
+    return data;
+  });
+  return mockTask;
+};
+
 // item memberships
 
 export const mockCreateGetMemberItemMembershipTask = (
   data: Partial<Item> | Error,
   shouldThrow?: boolean,
 ): jest.SpyInstance => {
-  const mockCreateTask = jest
+  const mockTask = jest
     .spyOn(MockItemMembershipTaskManager.prototype, 'createGetMemberItemMembershipTask')
     .mockImplementation(() => {
       return new MockTask(data);
@@ -39,5 +55,5 @@ export const mockCreateGetMemberItemMembershipTask = (
     if (shouldThrow) throw data;
     return data;
   });
-  return mockCreateTask;
+  return mockTask;
 };

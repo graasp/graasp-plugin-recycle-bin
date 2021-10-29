@@ -1,10 +1,19 @@
 import { FastifyLoggerInstance, FastifyPluginAsync } from 'fastify';
-import { Actor, IdParam, IdsParams, Item, ItemMembership, Member } from 'graasp';
+import { Actor, IdParam, IdsParams, Item, Member } from 'graasp';
 import {
   CannotCopyRecycledItem,
+  CannotGetRecycledItem,
   CannotMoveRecycledItem,
 } from './graasp-recycle-bin-errors';
-import common, { recycleOne, recycleMany, getRecycledItems, restoreOne, restoreMany } from './schemas';
+import common, {
+  recycleOne,
+  recycleMany,
+  getRecycledItems,
+  restoreOne,
+  restoreMany,
+  deleteOne,
+  deleteMany,
+} from './schemas';
 import { TaskManager as RecycledItemTaskManager } from './task-manager';
 
 interface RecycleBinOptions {
@@ -21,7 +30,7 @@ interface RecycleBinOptions {
 
 const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) => {
   const {
-    items: { taskManager: itemTaskManager },
+    items: { taskManager: itemTaskManager, dbService: itemService },
     itemMemberships: { taskManager: itemMembershipTaskManager },
     taskRunner: runner,
   } = fastify;
@@ -58,9 +67,25 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     },
   );
 
-  // Hide recycled items when getting items if it exists
+  // Prevent getting recycled item
+  runner.setTaskPostHookHandler<Item>(
+    itemTaskManager.getGetTaskName(),
+    async ({ id, path }, actor, { log }) => {
+      if (await isRecycledItem(path, actor, log)) throw new CannotGetRecycledItem(id);
+    },
+  );
+
+  // Hide recycled items when getting own items 
   runner.setTaskPostHookHandler<Item[]>(
     itemTaskManager.getGetOwnTaskName(),
+    async (items, actor, { log }) => {
+      await removeRecycledItems(items, actor, log);
+    },
+  );
+
+  // Hide recycled items when getting shared items 
+  runner.setTaskPostHookHandler<Item[]>(
+    itemTaskManager.getGetSharedWithTaskName(),
     async (items, actor, { log }) => {
       await removeRecycledItems(items, actor, log);
     },
@@ -74,8 +99,6 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     },
   );
 
-  // Do not hide item when getting one -> otherwise we cannot delete
-
   // Note: it's okay to not prevent memberships changes on recycled items
   // it is not really possible to change them in the interface
   // but it won't break anything
@@ -84,11 +107,12 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
 
   // get recycled items
   fastify.get<{ Params: IdParam }>(
-    '/recycled', { schema: getRecycledItems },
+    '/recycled',
+    { schema: getRecycledItems },
     async ({ member, log }) => {
       const task = recycledItemTaskManager.createGetOwnTask(member);
       return runner.runSingle(task, log);
-    }
+    },
   );
 
   // recycle item
@@ -141,9 +165,9 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
 
   // restore multiple items
   fastify.post<{ Querystring: IdsParams }>(
-    '/restore', { schema: restoreMany(maxItemsInRequest) },
+    '/restore',
+    { schema: restoreMany(maxItemsInRequest) },
     async ({ member, query: { id: ids }, log }, reply) => {
-
       // too many items to recycle and wait for execution to finish: start execution and return 202.
       if (ids.length > maxItemsWithResponse) {
         log.info(`Restoring items ${ids}`);
@@ -160,7 +184,54 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
         await restoreItem(ids[i], member, log);
       }
       reply.status(204);
-    }
+    },
+  );
+
+  // delete a recycled item
+  fastify.delete<{ Params: IdParam }>(
+    '/:id/delete',
+    { schema: deleteOne },
+    async ({ member, params: { id }, log }) => {
+      const tasks = recycledItemTaskManager.createDeleteTaskSequence(
+        member,
+        itemTaskManager,
+        itemMembershipTaskManager,
+        itemService,
+        id,
+      );
+
+      return runner.runSingleSequence(tasks, log);
+    },
+  );
+
+  // delete recycled items
+  fastify.delete<{ Querystring: IdsParams }>(
+    '/delete',
+    { schema: deleteMany(maxItemsInRequest) },
+    async ({ member, query: { id: ids }, log }, reply) => {
+      const tasks = ids.map((id) =>
+        recycledItemTaskManager.createDeleteTaskSequence(
+          member,
+          itemTaskManager,
+          itemMembershipTaskManager,
+          itemService,
+          id,
+        ),
+      );
+
+      if (ids.length > maxItemsWithResponse) {
+        log.info(`Deleting recycled items ${ids}`);
+
+        for (let i = 0; i < ids.length; i++) {
+          runner.runMultipleSequences(tasks, log);
+        }
+        reply.status(202);
+        return ids;
+      }
+
+      log.info(`Deleting recycled items ${ids}`);
+      return runner.runMultipleSequences(tasks, log);
+    },
   );
 
   async function recycleItem(

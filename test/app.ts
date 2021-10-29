@@ -27,9 +27,9 @@ const build = async ({
   itemMembershipTaskManager,
   options,
 }: {
-  runner: TaskRunner<Item>
-  itemTaskManager: ItemTaskManager,
-  itemMembershipTaskManager: ItemMembershipTaskManager
+  runner: TaskRunner<Item>;
+  itemTaskManager: ItemTaskManager;
+  itemMembershipTaskManager: ItemMembershipTaskManager;
   options?: any;
 }) => {
   const app = fastify();

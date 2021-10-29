@@ -25,7 +25,6 @@ export class RecycledItemService {
     sql`, `,
   );
 
-
   private static allColumnsForJoins = sql.join(
     [
       [['item', 'id'], ['id']],
