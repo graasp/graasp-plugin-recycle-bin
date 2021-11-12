@@ -17,6 +17,10 @@ export default {
         creator: { type: 'string' },
         createdAt: { type: 'string' },
         updatedAt: { type: 'string' },
+        settings: {
+          type: 'object',
+          additionalProperties: true,
+        },
       },
       additionalProperties: false,
     },
