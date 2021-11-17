@@ -13,6 +13,10 @@ export const ITEM_FILE: Item = {
   creator: 'creator-id',
   createdAt: 'somedata',
   updatedAt: 'somedata',
+  settings: {
+    isPinned: false,
+    showChatBox: false
+  }
 };
 
 export const ITEM_FOLDER: Item = {
@@ -25,6 +29,10 @@ export const ITEM_FOLDER: Item = {
   creator: 'creator-id',
   createdAt: 'somedata',
   updatedAt: 'somedata',
+  settings: {
+    isPinned: false,
+    showChatBox: false
+  }
 };
 
 export const GRAASP_ACTOR: Actor = {
@@ -43,6 +51,10 @@ export const ITEMS: Item[] = [
     creator: 'creator-id',
     createdAt: 'somedata',
     updatedAt: 'somedata',
+    settings: {
+      isPinned: false,
+      showChatBox: false
+    }
   },
   {
     id: v4(),
@@ -54,5 +66,9 @@ export const ITEMS: Item[] = [
     creator: 'creator-id',
     createdAt: 'somedata',
     updatedAt: 'somedata',
+    settings: {
+      isPinned: false,
+      showChatBox: false
+    }
   },
 ];
