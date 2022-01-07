@@ -16,7 +16,7 @@ import common, {
 } from './schemas';
 import { TaskManager as RecycledItemTaskManager } from './task-manager';
 
-interface RecycleBinOptions {
+export interface RecycleBinOptions {
   /** Max number of items to recycle in a request.
    * A number above this value will trigger an immediate bad request (400). Defaults to `10`. */
   maxItemsInRequest: number;
@@ -75,7 +75,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     },
   );
 
-  // Hide recycled items when getting own items 
+  // Hide recycled items when getting own items
   runner.setTaskPostHookHandler<Item[]>(
     itemTaskManager.getGetOwnTaskName(),
     async (items, actor, { log }) => {
@@ -83,7 +83,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     },
   );
 
-  // Hide recycled items when getting shared items 
+  // Hide recycled items when getting shared items
   runner.setTaskPostHookHandler<Item[]>(
     itemTaskManager.getGetSharedWithTaskName(),
     async (items, actor, { log }) => {

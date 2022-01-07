@@ -174,7 +174,7 @@ describe('Plugin Tests', () => {
             jest
               .spyOn(RecycledItemService.prototype, 'isDeleted')
               .mockImplementation(async () => true);
-            jest.spyOn(runner, 'runSingle').mockImplementation(async (task) => {
+            jest.spyOn(runner, 'runSingle').mockImplementation(async () => {
               return true;
             });
             expect(fn(deletedItem, actor, { log: undefined })).rejects.toEqual(
@@ -302,13 +302,13 @@ describe('Plugin Tests', () => {
       });
 
       it('Returns 202 when recycle many items', async () => {
+        const items = [ITEM_FOLDER, ITEM_FILE];
         const app = await build({
           itemTaskManager,
           itemMembershipTaskManager,
           runner,
-          options: { maxItemsWithResponse: 1 },
+          options: { maxItemsWithResponse: 1, maxItemsInRequest: items.length },
         });
-        const items = [ITEM_FOLDER, ITEM_FILE];
 
         mockGetTaskSequence(items[0]);
         mockCreateGetMemberItemMembershipTask(items[0]);
@@ -333,7 +333,7 @@ describe('Plugin Tests', () => {
           itemTaskManager,
           itemMembershipTaskManager,
           runner,
-          options: { maxItemsInRequest: 1 },
+          options: { maxItemsInRequest: 1, maxItemsWithResponse: 1 },
         });
         const items = [ITEM_FOLDER, ITEM_FILE];
 
@@ -440,13 +440,12 @@ describe('Plugin Tests', () => {
 
         const res = await app.inject({
           method: 'DELETE',
-          url: `invalid-id/delete`,
+          url: 'invalid-id/delete',
         });
 
         expect(res.statusCode).toBe(StatusCodes.BAD_REQUEST);
       });
     });
-
 
     describe('DELETE /delete', () => {
       it('Successfully delete multiple items', async () => {
@@ -454,8 +453,8 @@ describe('Plugin Tests', () => {
         const items = [ITEM_FOLDER, ITEM_FILE];
 
         jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
-        const mock = mockCreateGetMemberItemMembershipTask(items[0])
-        mockDeleteTask(items[0])
+        const mock = mockCreateGetMemberItemMembershipTask(items[0]);
+        mockDeleteTask(items[0]);
         jest.spyOn(runner, 'runMultipleSequences').mockImplementation(async () => items);
 
         const response = await app.inject({
@@ -466,22 +465,21 @@ describe('Plugin Tests', () => {
           )}`,
         });
         expect(response.statusCode).toBe(StatusCodes.OK);
-        expect(mock).toHaveBeenCalledTimes(items.length)
+        expect(mock).toHaveBeenCalledTimes(items.length);
       });
 
-
       it('Returns 202 when deleting many items', async () => {
+        const items = [ITEM_FOLDER, ITEM_FILE];
         const app = await build({
           itemTaskManager,
           itemMembershipTaskManager,
           runner,
-          options: { maxItemsWithResponse: 1 },
+          options: { maxItemsWithResponse: 1, maxItemsInRequest: items.length },
         });
-        const items = [ITEM_FOLDER, ITEM_FILE];
 
         jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
-        const mock = mockCreateGetMemberItemMembershipTask(items[0])
-        mockDeleteTask(items[0])
+        const mock = mockCreateGetMemberItemMembershipTask(items[0]);
+        mockDeleteTask(items[0]);
         jest.spyOn(runner, 'runMultipleSequences').mockImplementation(async () => items);
 
         const res = await app.inject({
@@ -500,7 +498,7 @@ describe('Plugin Tests', () => {
           itemTaskManager,
           itemMembershipTaskManager,
           runner,
-          options: { maxItemsInRequest: 1 },
+          options: { maxItemsInRequest: 1, maxItemsWithResponse: 1 },
         });
         const items = [ITEM_FOLDER, ITEM_FILE];
 

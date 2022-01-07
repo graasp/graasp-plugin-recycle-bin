@@ -15,8 +15,8 @@ export const ITEM_FILE: Item = {
   updatedAt: 'somedata',
   settings: {
     isPinned: false,
-    showChatBox: false
-  }
+    showChatBox: false,
+  },
 };
 
 export const ITEM_FOLDER: Item = {
@@ -31,8 +31,8 @@ export const ITEM_FOLDER: Item = {
   updatedAt: 'somedata',
   settings: {
     isPinned: false,
-    showChatBox: false
-  }
+    showChatBox: false,
+  },
 };
 
 export const GRAASP_ACTOR: Actor = {
@@ -53,8 +53,8 @@ export const ITEMS: Item[] = [
     updatedAt: 'somedata',
     settings: {
       isPinned: false,
-      showChatBox: false
-    }
+      showChatBox: false,
+    },
   },
   {
     id: v4(),
@@ -68,7 +68,7 @@ export const ITEMS: Item[] = [
     updatedAt: 'somedata',
     settings: {
       isPinned: false,
-      showChatBox: false
-    }
+      showChatBox: false,
+    },
   },
 ];

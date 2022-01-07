@@ -1,7 +1,7 @@
 import fastify from 'fastify';
 import { Item, ItemMembershipTaskManager, TaskRunner } from 'graasp';
 import { ItemTaskManager } from 'graasp-test';
-import plugin from '../src/plugin';
+import plugin, { RecycleBinOptions } from '../src/plugin';
 import { GRAASP_ACTOR } from './constants';
 
 const schemas = {
@@ -31,7 +31,7 @@ const build = async ({
   runner: TaskRunner<Item>;
   itemTaskManager: ItemTaskManager;
   itemMembershipTaskManager: ItemMembershipTaskManager;
-  options?: any;
+  options?: RecycleBinOptions;
 }) => {
   const app = fastify();
   app.addSchema(schemas);
