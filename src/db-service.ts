@@ -4,8 +4,6 @@ import { Item } from 'graasp';
 import { RecycledItemEntry } from './types';
 
 export class RecycledItemService {
-  constructor() {}
-
   // the 'safe' way to dynamically generate the columns names:
   private static allColumns = sql.join(
     [

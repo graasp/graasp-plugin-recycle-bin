@@ -13,7 +13,7 @@ export class GetOwnRecycledItemsTask extends BaseRecycleItemTask<readonly Item[]
     super(member, recycleItemService);
   }
 
-  async run(handler: DatabaseTransactionHandler, log: FastifyLoggerInstance): Promise<void> {
+  async run(handler: DatabaseTransactionHandler, _log: FastifyLoggerInstance): Promise<void> {
     this.status = 'RUNNING';
 
     // get member's "own" recycled items (created by member and where member is admin)
