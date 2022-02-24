@@ -1,3 +1,4 @@
+// todo: use global schema to force response with item schema
 export default {
   $id: 'http://graasp.org/recycle-bin/',
   definitions: {
@@ -48,6 +49,18 @@ export default {
       },
       additionalProperties: false,
     },
+    error: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        code: { type: 'string' },
+        message: { type: 'string' },
+        statusCode: { type: 'number' },
+        data: {},
+        origin: { type: 'string' },
+      },
+      additionalProperties: false,
+    },
   },
 };
 
@@ -57,7 +70,6 @@ const getRecycledItems = {
     200: {
       type: 'array',
       items: { $ref: 'http://graasp.org/recycle-bin/#/definitions/item' },
-      // todo: use global schema to force response with item schema
     },
   },
 };
@@ -65,14 +77,35 @@ const getRecycledItems = {
 // schema for recycling one item
 const recycleOne = {
   params: { $ref: 'http://graasp.org/recycle-bin/#/definitions/idParam' },
+  response: {
+    200: {
+      anyOf: [
+        { $ref: 'http://graasp.org/recycle-bin/#/definitions/error' },
+        { $ref: 'http://graasp.org/recycle-bin/#/definitions/item' },
+      ],
+    },
+  },
 };
 // schema for restoring one item
 const restoreOne = {
   params: { $ref: 'http://graasp.org/recycle-bin/#/definitions/idParam' },
+  response: {
+    200: {
+      anyOf: [{ $ref: 'http://graasp.org/recycle-bin/#/definitions/error' }, { type: 'string' }],
+    },
+  },
 };
 // schema for deleting one item
 const deleteOne = {
   params: { $ref: 'http://graasp.org/recycle-bin/#/definitions/idParam' },
+  response: {
+    200: {
+      anyOf: [
+        { $ref: 'http://graasp.org/recycle-bin/#/definitions/error' },
+        { $ref: 'http://graasp.org/recycle-bin/#/definitions/item' },
+      ],
+    },
+  },
 };
 
 // schema for recycling >1 items
@@ -84,6 +117,20 @@ const recycleMany = (maxItems: number) => ({
       { properties: { id: { maxItems } } },
     ],
   },
+  response: {
+    200: {
+      type: 'array',
+      anyOf: [
+        { $ref: 'http://graasp.org/recycle-bin/#/definitions/error' },
+        { $ref: 'http://graasp.org/recycle-bin/#/definitions/item' },
+      ],
+    },
+    202: {
+      // ids > MAX_TARGETS_FOR_MODIFY_REQUEST_W_RESPONSE
+      type: 'array',
+      items: { $ref: 'http://graasp.org/recycle-bin/#/definitions/uuid' },
+    },
+  },
 });
 // schema for restoring>1 items
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -94,6 +141,17 @@ const restoreMany = (maxItems: number) => ({
       { properties: { id: { maxItems } } },
     ],
   },
+  response: {
+    200: {
+      type: 'array',
+      anyOf: [{ $ref: 'http://graasp.org/recycle-bin/#/definitions/error' }, { type: 'string' }],
+    },
+    202: {
+      // ids > MAX_TARGETS_FOR_MODIFY_REQUEST_W_RESPONSE
+      type: 'array',
+      items: { $ref: 'http://graasp.org/recycle-bin/#/definitions/uuid' },
+    },
+  },
 });
 // schema for restoring>1 items
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -103,6 +161,20 @@ const deleteMany = (maxItems: number) => ({
       { $ref: 'http://graasp.org/recycle-bin/#/definitions/idsQuery' },
       { properties: { id: { maxItems } } },
     ],
+  },
+  response: {
+    200: {
+      type: 'array',
+      anyOf: [
+        { $ref: 'http://graasp.org/recycle-bin/#/definitions/error' },
+        { $ref: 'http://graasp.org/recycle-bin/#/definitions/item' },
+      ],
+    },
+    202: {
+      // ids > MAX_TARGETS_FOR_MODIFY_REQUEST_W_RESPONSE
+      type: 'array',
+      items: { $ref: 'http://graasp.org/recycle-bin/#/definitions/uuid' },
+    },
   },
 });
 
