@@ -1,12 +1,11 @@
 // global
 import { DatabaseTransactionHandler, Member } from 'graasp';
 import { RecycledItemService } from '../db-service';
-import { RecycledItemEntry } from '../types';
 import { BaseRecycleItemTask } from './base-task';
 
 type DeleteRecycledItemTaskInput = string;
 
-export class DeleteRecycledItemTask extends BaseRecycleItemTask<RecycledItemEntry> {
+export class DeleteRecycledItemTask extends BaseRecycleItemTask<string> {
   get name(): string {
     return DeleteRecycledItemTask.name;
   }
@@ -26,9 +25,10 @@ export class DeleteRecycledItemTask extends BaseRecycleItemTask<RecycledItemEntr
   async run(handler: DatabaseTransactionHandler): Promise<void> {
     this.status = 'RUNNING';
 
-    const result = await this.recycleItemService.delete(this.input, handler);
+    await this.recycleItemService.delete(this.input, handler);
+    // return id of the item
+    this._result = this.input;
 
     this.status = 'OK';
-    this._result = result;
   }
 }

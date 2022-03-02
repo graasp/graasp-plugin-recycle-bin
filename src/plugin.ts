@@ -1,5 +1,5 @@
 import { FastifyLoggerInstance, FastifyPluginAsync } from 'fastify';
-import { Actor, IdParam, IdsParams, Item, Member } from 'graasp';
+import { Actor, GraaspError, IdParam, IdsParams, Item, Member } from 'graasp';
 import {
   CannotCopyRecycledItem,
   CannotGetRecycledItem,
@@ -99,6 +99,19 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     },
   );
 
+  // Replace recycled items with errors
+  runner.setTaskPostHookHandler<(Item | GraaspError)[]>(
+    itemTaskManager.getGetManyTaskName(),
+    async (items, actor, { log }) => {
+      for (const [idx, value] of items.entries()) {
+        const item = value as Item;
+        if (await isRecycledItem(item.path, actor, log)) {
+          items[idx] = new CannotGetRecycledItem(item.id);
+        }
+      }
+    },
+  );
+
   // Note: it's okay to not prevent memberships changes on recycled items
   // it is not really possible to change them in the interface
   // but it won't break anything
@@ -119,11 +132,9 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   fastify.post<{ Params: IdParam }>(
     '/:id/recycle',
     { schema: recycleOne },
-    async ({ member, params: { id: itemId }, log }, reply) => {
+    async ({ member, params: { id: itemId }, log }) => {
       log.info(`Recycling item '${itemId}'`);
-      await recycleItem(itemId, member, log);
-
-      reply.status(204);
+      return recycleItem(itemId, member, log);
     },
   );
 
@@ -132,22 +143,22 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     '/recycle',
     { schema: recycleMany(maxItemsInRequest) },
     async ({ member, query: { id: ids }, log }, reply) => {
+      log.info(`Recycling items ${ids}`);
       // too many items to recycle and wait for execution to finish: start execution and return 202.
       if (ids.length > maxItemsWithResponse) {
-        log.info(`Recycling items ${ids}`);
-
-        for (let i = 0; i < ids.length; i++) {
-          recycleItem(ids[i], member, log);
+        for (const id of ids) {
+          recycleItem(id, member, log);
         }
         reply.status(202);
         return ids;
       }
 
-      log.info(`Recycling items ${ids}`);
-      for (let i = 0; i < ids.length; i++) {
-        await recycleItem(ids[i], member, log);
+      const results = [];
+      for (const id of ids) {
+        const result = await recycleItem(id, member, log);
+        results.push(result);
       }
-      reply.status(204);
+      return results;
     },
   );
 
@@ -155,11 +166,9 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   fastify.post<{ Params: IdParam }>(
     '/:id/restore',
     { schema: restoreOne },
-    async ({ member, params: { id }, log }, reply) => {
+    async ({ member, params: { id }, log }) => {
       log.info(`Restore item '${id}'`);
-      await restoreItem(id, member, log);
-
-      reply.status(204);
+      return restoreItem(id, member, log);
     },
   );
 
@@ -168,22 +177,22 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     '/restore',
     { schema: restoreMany(maxItemsInRequest) },
     async ({ member, query: { id: ids }, log }, reply) => {
+      log.info(`Restoring items ${ids}`);
       // too many items to recycle and wait for execution to finish: start execution and return 202.
       if (ids.length > maxItemsWithResponse) {
-        log.info(`Restoring items ${ids}`);
-
-        for (let i = 0; i < ids.length; i++) {
-          restoreItem(ids[i], member, log);
+        for (const id of ids) {
+          restoreItem(id, member, log);
         }
         reply.status(202);
         return ids;
       }
 
-      log.info(`Restoring items ${ids}`);
-      for (let i = 0; i < ids.length; i++) {
-        await restoreItem(ids[i], member, log);
+      const results = [];
+      for (const id of ids) {
+        const result = await restoreItem(id, member, log);
+        results.push(result);
       }
-      reply.status(204);
+      return results;
     },
   );
 
@@ -209,6 +218,8 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     '/delete',
     { schema: deleteMany(maxItemsInRequest) },
     async ({ member, query: { id: ids }, log }, reply) => {
+      log.info(`Deleting recycled items ${ids}`);
+
       const tasks = ids.map((id) =>
         recycledItemTaskManager.createDeleteTaskSequence(
           member,
@@ -220,8 +231,6 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
       );
 
       if (ids.length > maxItemsWithResponse) {
-        log.info(`Deleting recycled items ${ids}`);
-
         for (let i = 0; i < ids.length; i++) {
           runner.runMultipleSequences(tasks, log);
         }
@@ -229,7 +238,6 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
         return ids;
       }
 
-      log.info(`Deleting recycled items ${ids}`);
       return runner.runMultipleSequences(tasks, log);
     },
   );
@@ -238,7 +246,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     itemId: string,
     member: Member,
     log: FastifyLoggerInstance,
-  ): Promise<void> {
+  ): Promise<unknown> {
     // get item
     // todo: pass validatePermission to define et minimum condition for reading an item
     // this will avoid checking the permission twice
@@ -254,18 +262,19 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     // create entry in table
     const t4 = recycledItemTaskManager.createCreateTask(member, {});
     t4.getInput = () => t1[0].result;
+    t4.getResult = () => t1[0].result;
 
-    await runner.runSingleSequence([...t1, t2, t3, t4], log);
+    return runner.runSingleSequence([...t1, t2, t3, t4], log);
   }
 
   async function restoreItem(
     itemId: string,
     member: Member,
     log: FastifyLoggerInstance,
-  ): Promise<void> {
+  ): Promise<unknown> {
     // remove entry from recycle_item
     const t1 = recycledItemTaskManager.createDeleteTask(member, itemId);
-    await runner.runSingle(t1, log);
+    return runner.runSingle(t1, log);
   }
 
   async function isRecycledItem(path: string, member: Actor, log: FastifyLoggerInstance) {

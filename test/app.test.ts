@@ -14,6 +14,7 @@ import {
   CannotCopyRecycledItem,
   CannotGetRecycledItem,
   CannotMoveRecycledItem,
+  GraaspRecycleBinError,
 } from '../src/graasp-recycle-bin-errors';
 import { Item } from 'graasp';
 
@@ -201,6 +202,30 @@ describe('Plugin Tests', () => {
         await build({ itemTaskManager, runner, itemMembershipTaskManager });
       });
     });
+    describe('Get Many Items Hook Handler', () => {
+      it('Replace items with errors if deleted on get many items', async () => {
+        jest.spyOn(runner, 'setTaskPreHookHandler').mockImplementation(async () => false);
+        jest.spyOn(runner, 'setTaskPostHookHandler').mockImplementation(async (name, fn) => {
+          const deletedItem = ITEM_FOLDER;
+          const items = [...ITEMS];
+          if (name === itemTaskManager.getGetManyTaskName()) {
+            // only folder item is deleted
+            jest
+              .spyOn(RecycledItemService.prototype, 'isDeleted')
+              .mockImplementation(async () => true);
+            jest.spyOn(runner, 'runSingle').mockImplementation(async (task) => {
+              return (task.input as { item: Item })?.item.path === deletedItem.path;
+            });
+            await fn(items, actor, { log: undefined });
+            expect(items.length).toEqual(ITEMS.length);
+            expect(items[0]).toEqual(new CannotGetRecycledItem(deletedItem.id));
+            expect(items[1]).toEqual(ITEMS[1]);
+          }
+        });
+
+        await build({ itemTaskManager, runner, itemMembershipTaskManager });
+      });
+    });
   });
 
   describe('Endpoints', () => {
@@ -254,14 +279,15 @@ describe('Plugin Tests', () => {
         mockGetTaskSequence(item);
         mockCreateGetMemberItemMembershipTask(item);
 
-        jest.spyOn(runner, 'runSingleSequence').mockImplementation(async () => true);
+        jest.spyOn(runner, 'runSingleSequence').mockImplementation(async () => item);
 
         const res = await app.inject({
           method: 'POST',
           url: `/${item.id}/recycle`,
         });
 
-        expect(res.statusCode).toBe(StatusCodes.NO_CONTENT);
+        expect(res.statusCode).toBe(StatusCodes.OK);
+        expect(res.json()).toEqual(item);
       });
 
       it('Bad request for invalid id', async () => {
@@ -286,9 +312,12 @@ describe('Plugin Tests', () => {
         mockGetTaskSequence(items[0]);
         mockCreateGetMemberItemMembershipTask(items[0]);
 
+        let runSingleSequenceIdx = 0;
         const mockRunSingleSequence = jest
           .spyOn(runner, 'runSingleSequence')
-          .mockImplementation(async () => true);
+          .mockImplementation(async () => {
+            return items[runSingleSequenceIdx++];
+          });
 
         const res = await app.inject({
           method: 'POST',
@@ -297,7 +326,8 @@ describe('Plugin Tests', () => {
             { arrayFormat: 'repeat' },
           )}`,
         });
-        expect(res.statusCode).toBe(StatusCodes.NO_CONTENT);
+        expect(res.statusCode).toBe(StatusCodes.OK);
+        expect(res.json()).toEqual(items);
         expect(mockRunSingleSequence).toHaveBeenCalledTimes(2);
       });
 
@@ -325,6 +355,43 @@ describe('Plugin Tests', () => {
           )}`,
         });
         expect(res.statusCode).toBe(StatusCodes.ACCEPTED);
+        expect(mockRunSingleSequence).toHaveBeenCalledTimes(2);
+      });
+
+      it('Returns error in array if one item failed to be recycled', async () => {
+        const app = await build({ itemTaskManager, itemMembershipTaskManager, runner });
+        const items = [ITEM_FOLDER, ITEM_FILE];
+        const error = new GraaspRecycleBinError({
+          code: 'code',
+          statusCode: StatusCodes.FORBIDDEN,
+          message: 'error message',
+        });
+
+        mockGetTaskSequence(items[0]);
+        mockCreateGetMemberItemMembershipTask(items[0]);
+
+        let runSingleSequenceIdx = 0;
+        const mockRunSingleSequence = jest
+          .spyOn(runner, 'runSingleSequence')
+          .mockImplementation(async () => {
+            if (runSingleSequenceIdx > 0) {
+              return error;
+            } else {
+              return items[runSingleSequenceIdx++];
+            }
+          });
+
+        const res = await app.inject({
+          method: 'POST',
+          url: `/recycle?${qs.stringify(
+            { id: items.map(({ id }) => id) },
+            { arrayFormat: 'repeat' },
+          )}`,
+        });
+        expect(res.statusCode).toBe(StatusCodes.OK);
+        const result = res.json();
+        expect(result).toContainEqual(error);
+        expect(result).toContainEqual(items[0]);
         expect(mockRunSingleSequence).toHaveBeenCalledTimes(2);
       });
 
@@ -364,14 +431,15 @@ describe('Plugin Tests', () => {
         const app = await build({ itemTaskManager, itemMembershipTaskManager, runner });
         const item = ITEM_FOLDER;
 
-        jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
+        jest.spyOn(runner, 'runSingle').mockImplementation(async () => item.id);
 
         const response = await app.inject({
           method: 'POST',
           url: `/${item.id}/restore`,
         });
 
-        expect(response.statusCode).toBe(StatusCodes.NO_CONTENT);
+        expect(response.statusCode).toBe(StatusCodes.OK);
+        expect(response.body).toBe(item.id);
       });
 
       it('Bad request for invalid id', async () => {
@@ -391,7 +459,8 @@ describe('Plugin Tests', () => {
         const app = await build({ itemTaskManager, itemMembershipTaskManager, runner });
         const items = [ITEM_FOLDER, ITEM_FILE];
 
-        jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
+        let innerCounter = 0;
+        jest.spyOn(runner, 'runSingle').mockImplementation(async () => items[innerCounter++].id);
 
         const response = await app.inject({
           method: 'POST',
@@ -401,7 +470,35 @@ describe('Plugin Tests', () => {
           )}`,
         });
 
-        expect(response.statusCode).toBe(StatusCodes.NO_CONTENT);
+        expect(response.statusCode).toBe(StatusCodes.OK);
+        expect(response.json()).toEqual(items.map(({ id }) => id));
+      });
+
+      it('Returns 202 when restore many items', async () => {
+        const items = [ITEM_FOLDER, ITEM_FILE];
+        const app = await build({
+          itemTaskManager,
+          itemMembershipTaskManager,
+          runner,
+          options: { maxItemsWithResponse: 1, maxItemsInRequest: items.length },
+        });
+
+        let innerCounter = 0;
+        const mockRunSingle = jest
+          .spyOn(runner, 'runSingle')
+          .mockImplementation(async () => items[innerCounter++].id);
+
+        const response = await app.inject({
+          method: 'POST',
+          url: `/restore?${qs.stringify(
+            { id: items.map(({ id }) => id) },
+            { arrayFormat: 'repeat' },
+          )}`,
+        });
+
+        expect(response.statusCode).toBe(StatusCodes.ACCEPTED);
+        expect(response.json()).toEqual(items.map(({ id }) => id));
+        expect(mockRunSingle).toHaveBeenCalledTimes(2);
       });
 
       it('Bad request for invalid id', async () => {
@@ -465,6 +562,7 @@ describe('Plugin Tests', () => {
           )}`,
         });
         expect(response.statusCode).toBe(StatusCodes.OK);
+        expect(response.json()).toEqual(items);
         expect(mock).toHaveBeenCalledTimes(items.length);
       });
 
@@ -490,6 +588,37 @@ describe('Plugin Tests', () => {
           )}`,
         });
         expect(res.statusCode).toBe(StatusCodes.ACCEPTED);
+        expect(mock).toHaveBeenCalledTimes(2);
+      });
+
+      it('Returns error in array if one item failed to be deleted', async () => {
+        const app = await build({ itemTaskManager, itemMembershipTaskManager, runner });
+        const items = [ITEM_FOLDER, ITEM_FILE];
+        const error = new GraaspRecycleBinError({
+          code: 'code',
+          statusCode: StatusCodes.FORBIDDEN,
+          message: 'error message',
+        });
+
+        jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
+        const mock = mockCreateGetMemberItemMembershipTask(items[0]);
+        mockDeleteTask(items[0]);
+
+        jest
+          .spyOn(runner, 'runMultipleSequences')
+          .mockImplementation(async () => [error, items[0]]);
+
+        const res = await app.inject({
+          method: 'DELETE',
+          url: `/delete?${qs.stringify(
+            { id: items.map(({ id }) => id) },
+            { arrayFormat: 'repeat' },
+          )}`,
+        });
+        expect(res.statusCode).toBe(StatusCodes.OK);
+        const result = res.json();
+        expect(result).toContainEqual(error);
+        expect(result).toContainEqual(items[0]);
         expect(mock).toHaveBeenCalledTimes(2);
       });
 
