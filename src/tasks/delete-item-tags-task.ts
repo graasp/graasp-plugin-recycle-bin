@@ -16,7 +16,7 @@ export class DeleteItemTagsTask extends BaseRecycleItemTask<number> {
   constructor(
     member: Member,
     recycleItemService: RecycledItemService,
-    input: DeleteItemTagsTaskInput,
+    input?: DeleteItemTagsTaskInput,
   ) {
     super(member, recycleItemService);
     this.input = input;
@@ -24,8 +24,7 @@ export class DeleteItemTagsTask extends BaseRecycleItemTask<number> {
 
   async run(handler: DatabaseTransactionHandler): Promise<void> {
     this.status = 'RUNNING';
-
-    const itemPath = this.input?.path;
+    const itemPath = this.input?.id.replace(/-/g, '_');
     this._result = await this.recycleItemService.deleteItemTags(itemPath, handler);
     this.status = 'OK';
   }

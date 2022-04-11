@@ -260,8 +260,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     t3.getInput = () => ({ item: t1[0].result });
 
     // delete all visibility tags
-    const t4 = recycledItemTaskManager.createDeleteItemTagsTask(member);
-    t4.getInput = () => t1[0].result;
+    const t4 = recycledItemTaskManager.createDeleteItemTagsTask(member, {id: itemId});
 
     // create entry in table
     const t5 = recycledItemTaskManager.createCreateTask(member, {});
