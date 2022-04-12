@@ -10,7 +10,6 @@ import {
 import { RecycledItemService } from './db-service';
 import { RecycledItemTaskManager } from './interfaces/task-manager';
 import { CreateRecycledItemTask } from './tasks/create-recycled-item-task';
-import { DeleteItemTagsTask } from './tasks/delete-item-tags-task';
 import { DeleteRecycledItemTask } from './tasks/delete-recycled-item-task';
 import { GetItemTask, GetItemTaskInputType } from './tasks/get-item-task';
 import { GetOwnRecycledItemsTask } from './tasks/get-own-recycled-items-task';
@@ -77,14 +76,5 @@ export class TaskManager implements RecycledItemTaskManager<Member> {
     t4.getInput = () => ({ item: t1.result });
 
     return [t1, t2, t3, t4];
-  }
-  getDeleteItemTagsTaskName(): string {
-    return DeleteItemTagsTask.name;
-  }
-  createDeleteItemTagsTask(
-    member: Member,
-    input?: Partial<Item>,
-  ): DeleteItemTagsTask {
-    return new DeleteItemTagsTask(member, this.recycledItemService, input);
   }
 }

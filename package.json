@@ -45,7 +45,7 @@
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^4.0.0",
     "fastify": "^3.25.3",
-    "graasp-item-tags": "github:graasp/graasp-item-tags",
+    "graasp-item-tags": "github:graasp/graasp-item-tags#20/deleteItemTagByItemId",
     "graasp-test": "github:graasp/graasp-test",
     "husky": "7.0.4",
     "jest": "^27.4.7",

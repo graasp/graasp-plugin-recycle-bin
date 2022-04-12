@@ -3389,12 +3389,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graasp-item-tags@github:graasp/graasp-item-tags":
+"graasp-item-tags@github:graasp/graasp-item-tags#20/deleteItemTagByItemId":
   version: 0.1.0
-  resolution: "graasp-item-tags@https://github.com/graasp/graasp-item-tags.git#commit=fab30bc3e195ad1c156ea90754584988426f8a75"
+  resolution: "graasp-item-tags@https://github.com/graasp/graasp-item-tags.git#commit=35ad9a9588abd3f4d322f0cfd1d8047dcc8b8b09"
   dependencies:
     http-status-codes: 2.2.0
-  checksum: 6b3093f6f5776c96e8a19f2dd712a5f35eec2ce4d20c5a9b89f1855842f0b79c5804cdd9637a81a690af216afc36419b51c357b408adb44d51454b45b63966ef
+  checksum: a008f79635348d27b81a2d507969ef55f6416b8b4f1ee30c968eac26a5fc26cb5bc42e0223b4d1fda770b248ebbb614f5a500d6cf7528d0405249373608325e8
   languageName: node
   linkType: hard
 
@@ -3415,7 +3415,7 @@ __metadata:
     eslint-config-prettier: ^8.3.0
     eslint-plugin-prettier: ^4.0.0
     fastify: ^3.25.3
-    graasp-item-tags: "github:graasp/graasp-item-tags"
+    graasp-item-tags: "github:graasp/graasp-item-tags#20/deleteItemTagByItemId"
     graasp-test: "github:graasp/graasp-test"
     http-status-codes: ^2.2.0
     husky: 7.0.4

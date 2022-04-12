@@ -2,7 +2,6 @@
 import { sql, DatabaseTransactionConnectionType as TrxHandler } from 'slonik';
 import { Item } from 'graasp';
 import { RecycledItemEntry } from './types';
-import { ItemTag } from 'graasp-item-tags';
 
 export class RecycledItemService {
   // the 'safe' way to dynamically generate the columns names:
@@ -123,22 +122,5 @@ export class RecycledItemService {
       `,
       )
       .then(({ rows }) => Boolean(rows.length));
-  }
-
-  /**
-   * Delete item-tags of given item
-   * @param itemPath item_path of given item
-   * @param transactionHandler Database transaction handler
-   */
-   async deleteItemTags(itemPath: string, transactionHandler: TrxHandler): Promise<number> {
-    return transactionHandler
-      .query<ItemTag>(
-        sql`
-        DELETE FROM item_tag
-        WHERE item_path = ${itemPath}
-        RETURNING *
-      `,
-      )
-      .then(({ rows }) => rows.length);
   }
 }

@@ -1,5 +1,6 @@
 import { FastifyLoggerInstance, FastifyPluginAsync } from 'fastify';
 import { Actor, GraaspError, IdParam, IdsParams, Item, Member } from 'graasp';
+import { ItemTagService, ItemTagTaskManager } from 'graasp-item-tags';
 import {
   CannotCopyRecycledItem,
   CannotGetRecycledItem,
@@ -31,12 +32,14 @@ export interface RecycleBinOptions {
 const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) => {
   const {
     items: { taskManager: itemTaskManager, dbService: itemService },
-    itemMemberships: { taskManager: itemMembershipTaskManager },
+    itemMemberships: { taskManager: itemMembershipTaskManager, dbService: itemMembershipService },
     taskRunner: runner,
   } = fastify;
   const { maxItemsInRequest = 10, maxItemsWithResponse = 5 } = options;
 
   const recycledItemTaskManager = new RecycledItemTaskManager();
+  const itemTagService = new ItemTagService();
+  const itemTagTaskManager = new ItemTagTaskManager(itemService, itemMembershipService, itemTagService, itemTaskManager);
 
   fastify.addSchema(common);
 
@@ -259,14 +262,13 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     const t3 = recycledItemTaskManager.createIsDeletedTask(member as Member, { validate: false });
     t3.getInput = () => ({ item: t1[0].result });
 
-    // delete all visibility tags
-    const t4 = recycledItemTaskManager.createDeleteItemTagsTask(member, {id: itemId});
+    // delete public and published tag
+    const t4 = itemTagTaskManager.createDeleteItemTagsByItemIdTask(member, itemId);
 
     // create entry in table
     const t5 = recycledItemTaskManager.createCreateTask(member, {});
     t5.getInput = () => t1[0].result;
     t5.getResult = () => t1[0].result;
-
 
     return runner.runSingleSequence([...t1, t2, t3, t4, t5], log);
   }
