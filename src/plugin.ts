@@ -27,6 +27,8 @@ export interface RecycleBinOptions {
    * will continue "in the back". **This value should be smaller than `maxItemsInRequest`**
    * otherwise it has no effect. Defaults to `5`. */
   maxItemsWithResponse: number;
+  PUBLISHED_TAG_ID: string;
+  PUBLIC_TAG_ID: string;
 }
 
 const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) => {
@@ -35,7 +37,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     itemMemberships: { taskManager: itemMembershipTaskManager, dbService: itemMembershipService },
     taskRunner: runner,
   } = fastify;
-  const { maxItemsInRequest = 10, maxItemsWithResponse = 5 } = options;
+  const { maxItemsInRequest = 10, maxItemsWithResponse = 5, PUBLISHED_TAG_ID, PUBLIC_TAG_ID  } = options;
 
   const recycledItemTaskManager = new RecycledItemTaskManager();
   const itemTagService = new ItemTagService();
@@ -263,7 +265,8 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     t3.getInput = () => ({ item: t1[0].result });
 
     // delete public and published tag
-    const t4 = itemTagTaskManager.createDeleteItemTagsByItemIdTask(member, itemId);
+    const tagIds = [PUBLIC_TAG_ID, PUBLISHED_TAG_ID];
+    const t4 = itemTagTaskManager.createDeleteItemTagsByItemIdTask(member, itemId, tagIds);
 
     // create entry in table
     const t5 = recycledItemTaskManager.createCreateTask(member, {});
