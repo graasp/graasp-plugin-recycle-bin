@@ -337,7 +337,7 @@ describe('Plugin Tests', () => {
           itemTaskManager,
           itemMembershipTaskManager,
           runner,
-          options: { maxItemsWithResponse: 1, maxItemsInRequest: items.length },
+          options: { maxItemsWithResponse: 1, maxItemsInRequest: items.length, publicTagId: '', publishedTagId: '' },
         });
 
         mockGetTaskSequence(items[0]);
@@ -400,7 +400,7 @@ describe('Plugin Tests', () => {
           itemTaskManager,
           itemMembershipTaskManager,
           runner,
-          options: { maxItemsInRequest: 1, maxItemsWithResponse: 1 },
+          options: { maxItemsInRequest: 1, maxItemsWithResponse: 1, publicTagId: '', publishedTagId: '' },
         });
         const items = [ITEM_FOLDER, ITEM_FILE];
 
@@ -480,7 +480,7 @@ describe('Plugin Tests', () => {
           itemTaskManager,
           itemMembershipTaskManager,
           runner,
-          options: { maxItemsWithResponse: 1, maxItemsInRequest: items.length },
+          options: { maxItemsWithResponse: 1, maxItemsInRequest: items.length, publicTagId: '', publishedTagId: '' },
         });
 
         let innerCounter = 0;
@@ -572,7 +572,7 @@ describe('Plugin Tests', () => {
           itemTaskManager,
           itemMembershipTaskManager,
           runner,
-          options: { maxItemsWithResponse: 1, maxItemsInRequest: items.length },
+          options: { maxItemsWithResponse: 1, maxItemsInRequest: items.length, publicTagId: '', publishedTagId: '' },
         });
 
         jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
@@ -627,7 +627,7 @@ describe('Plugin Tests', () => {
           itemTaskManager,
           itemMembershipTaskManager,
           runner,
-          options: { maxItemsInRequest: 1, maxItemsWithResponse: 1 },
+          options: { maxItemsInRequest: 1, maxItemsWithResponse: 1, publicTagId: '', publishedTagId: '' },
         });
         const items = [ITEM_FOLDER, ITEM_FILE];
 
