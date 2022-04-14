@@ -14,7 +14,6 @@ import { DeleteRecycledItemTask } from './tasks/delete-recycled-item-task';
 import { GetItemTask, GetItemTaskInputType } from './tasks/get-item-task';
 import { GetOwnRecycledItemsTask } from './tasks/get-own-recycled-items-task';
 import { IsItemDeletedTask } from './tasks/is-item-deleted-task';
-import { PostHookFunctionType } from './types';
 
 export class TaskManager implements RecycledItemTaskManager<Member> {
   private recycledItemService = new RecycledItemService();
@@ -31,8 +30,8 @@ export class TaskManager implements RecycledItemTaskManager<Member> {
     return CreateRecycledItemTask.name;
   }
 
-  createCreateTask(member: Member, postHook: PostHookFunctionType, input?: Partial<Item>): CreateRecycledItemTask {
-    return new CreateRecycledItemTask(member, this.recycledItemService, postHook, input);
+  createCreateTask(member: Member, input?: Partial<Item>): CreateRecycledItemTask {
+    return new CreateRecycledItemTask(member, this.recycledItemService, input);
   }
   getDeleteTaskName(): string {
     return DeleteRecycledItemTask.name;

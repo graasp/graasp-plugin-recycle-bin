@@ -1,4 +1,4 @@
-import { Item } from 'graasp';
+import { Item, PostHookHandlerType } from 'graasp';
 import {
   Task as MockTask,
   TaskRunner as MockTaskRunner,
@@ -57,3 +57,5 @@ export const mockCreateGetMemberItemMembershipTask = (
   });
   return mockTask;
 };
+
+export const mockPostHookHanlder: PostHookHandlerType<string> = () => null;

@@ -1,5 +1,5 @@
 import { FastifyLoggerInstance, FastifyPluginAsync } from 'fastify';
-import { Actor, GraaspError, IdParam, IdsParams, Item, Member, Task } from 'graasp';
+import { Actor, GraaspError, IdParam, IdsParams, Item, Member, PostHookHandlerType } from 'graasp';
 import {
   CannotCopyRecycledItem,
   CannotGetRecycledItem,
@@ -15,8 +15,6 @@ import common, {
   deleteMany,
 } from './schemas';
 import { TaskManager as RecycledItemTaskManager } from './task-manager';
-import { PostHookFunctionType } from './types';
-
 
 export interface RecycleBinOptions {
   /** Max number of items to recycle in a request.
@@ -28,9 +26,7 @@ export interface RecycleBinOptions {
    * will continue "in the back". **This value should be smaller than `maxItemsInRequest`**
    * otherwise it has no effect. Defaults to `5`. */
   maxItemsWithResponse: number;
-  publishedTagId: string;
-  publicTagId: string;
-  recycleItemPostHook: PostHookFunctionType;
+  recycleItemPostHook: PostHookHandlerType<string>;
 }
 
 const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) => {
@@ -103,7 +99,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     },
   );
 
-  runner.setTaskPostHookHandler<number>(
+  runner.setTaskPostHookHandler<string>(
     recycledItemTaskManager.getCreateTaskName(),
     postHook
   );
@@ -269,7 +265,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     t3.getInput = () => ({ item: t1[0].result });
 
     // create entry in table
-    const t4 = recycledItemTaskManager.createCreateTask(member, postHook, {});
+    const t4 = recycledItemTaskManager.createCreateTask(member, {});
     t4.getInput = () => t1[0].result;
     t4.getResult = () => t1[0].result;
 
