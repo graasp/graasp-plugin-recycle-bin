@@ -4,3 +4,5 @@ export type RecycledItemEntry = {
   createdAt: string;
   creator: string;
 };
+
+export type PostHookFunctionType = (itemPath, handler) => null;

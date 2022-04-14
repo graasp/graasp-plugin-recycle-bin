@@ -1,6 +1,5 @@
 import { FastifyLoggerInstance, FastifyPluginAsync } from 'fastify';
-import { Actor, GraaspError, IdParam, IdsParams, Item, Member } from 'graasp';
-import { ItemTagService, ItemTagTaskManager } from 'graasp-item-tags';
+import { Actor, GraaspError, IdParam, IdsParams, Item, Member, Task } from 'graasp';
 import {
   CannotCopyRecycledItem,
   CannotGetRecycledItem,
@@ -16,6 +15,8 @@ import common, {
   deleteMany,
 } from './schemas';
 import { TaskManager as RecycledItemTaskManager } from './task-manager';
+import { PostHookFunctionType } from './types';
+
 
 export interface RecycleBinOptions {
   /** Max number of items to recycle in a request.
@@ -29,20 +30,18 @@ export interface RecycleBinOptions {
   maxItemsWithResponse: number;
   publishedTagId: string;
   publicTagId: string;
+  recycleItemPostHook: PostHookFunctionType;
 }
 
 const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) => {
   const {
     items: { taskManager: itemTaskManager, dbService: itemService },
-    itemMemberships: { taskManager: itemMembershipTaskManager, dbService: itemMembershipService },
+    itemMemberships: { taskManager: itemMembershipTaskManager },
     taskRunner: runner,
   } = fastify;
-  const { maxItemsInRequest = 10, maxItemsWithResponse = 5, publishedTagId, publicTagId  } = options;
+  const { maxItemsInRequest = 10, maxItemsWithResponse = 5, recycleItemPostHook: postHook } = options;
 
   const recycledItemTaskManager = new RecycledItemTaskManager();
-  const itemTagService = new ItemTagService();
-  const itemTagTaskManager = new ItemTagTaskManager(itemService, itemMembershipService, itemTagService, itemTaskManager);
-
   fastify.addSchema(common);
 
   const removeRecycledItems = async (items, actor, log) => {
@@ -102,6 +101,11 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     async (items, actor, { log }) => {
       await removeRecycledItems(items, actor, log);
     },
+  );
+
+  runner.setTaskPostHookHandler<number>(
+    recycledItemTaskManager.getCreateTaskName(),
+    postHook
   );
 
   // Replace recycled items with errors
@@ -264,16 +268,12 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     const t3 = recycledItemTaskManager.createIsDeletedTask(member as Member, { validate: false });
     t3.getInput = () => ({ item: t1[0].result });
 
-    // delete public and published tag
-    const tagIds = [publicTagId, publishedTagId];
-    const t4 = itemTagTaskManager.createDeleteItemTagsByItemIdTask(member, itemId, tagIds);
-
     // create entry in table
-    const t5 = recycledItemTaskManager.createCreateTask(member, {});
-    t5.getInput = () => t1[0].result;
-    t5.getResult = () => t1[0].result;
+    const t4 = recycledItemTaskManager.createCreateTask(member, postHook, {});
+    t4.getInput = () => t1[0].result;
+    t4.getResult = () => t1[0].result;
 
-    return runner.runSingleSequence([...t1, t2, t3, t4, t5], log);
+    return runner.runSingleSequence([...t1, t2, t3, t4], log);
   }
 
   async function restoreItem(
