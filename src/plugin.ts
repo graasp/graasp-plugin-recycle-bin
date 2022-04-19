@@ -26,7 +26,7 @@ export interface RecycleBinOptions {
    * will continue "in the back". **This value should be smaller than `maxItemsInRequest`**
    * otherwise it has no effect. Defaults to `5`. */
   maxItemsWithResponse: number;
-  recycleItemPostHook: PostHookHandlerType<string>;
+  recycleItemPostHook?: PostHookHandlerType<string>;
 }
 
 const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) => {
