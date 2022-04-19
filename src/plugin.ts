@@ -1,5 +1,5 @@
 import { FastifyLoggerInstance, FastifyPluginAsync } from 'fastify';
-import { Actor, GraaspError, IdParam, IdsParams, Item, Member } from 'graasp';
+import { Actor, GraaspError, IdParam, IdsParams, Item, Member, PostHookHandlerType } from 'graasp';
 import {
   CannotCopyRecycledItem,
   CannotGetRecycledItem,
@@ -26,6 +26,7 @@ export interface RecycleBinOptions {
    * will continue "in the back". **This value should be smaller than `maxItemsInRequest`**
    * otherwise it has no effect. Defaults to `5`. */
   maxItemsWithResponse: number;
+  recycleItemPostHook?: PostHookHandlerType<string>;
 }
 
 const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) => {
@@ -34,10 +35,9 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     itemMemberships: { taskManager: itemMembershipTaskManager },
     taskRunner: runner,
   } = fastify;
-  const { maxItemsInRequest = 10, maxItemsWithResponse = 5 } = options;
+  const { maxItemsInRequest = 10, maxItemsWithResponse = 5, recycleItemPostHook: postHook } = options;
 
   const recycledItemTaskManager = new RecycledItemTaskManager();
-
   fastify.addSchema(common);
 
   const removeRecycledItems = async (items, actor, log) => {
@@ -97,6 +97,11 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     async (items, actor, { log }) => {
       await removeRecycledItems(items, actor, log);
     },
+  );
+
+  runner.setTaskPostHookHandler<string>(
+    recycledItemTaskManager.getCreateTaskName(),
+    postHook
   );
 
   // Replace recycled items with errors
