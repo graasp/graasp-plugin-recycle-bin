@@ -1,23 +1,25 @@
+import { StatusCodes } from 'http-status-codes';
 import qs from 'qs';
 import { v4 } from 'uuid';
-import { ItemTaskManager, ItemMembershipTaskManager, TaskRunner } from 'graasp-test';
-import { StatusCodes } from 'http-status-codes';
-import { GRAASP_ACTOR, ITEMS, ITEM_FILE, ITEM_FOLDER } from './constants';
-import build from './app';
+
+import { Item } from 'graasp';
+import { ItemMembershipTaskManager, ItemTaskManager, TaskRunner } from 'graasp-test';
+
 import { RecycledItemService } from '../src/db-service';
-import {
-  mockCreateGetMemberItemMembershipTask,
-  mockDeleteTask,
-  mockGetTaskSequence,
-  mockPostHookHanlder,
-} from './mocks';
 import {
   CannotCopyRecycledItem,
   CannotGetRecycledItem,
   CannotMoveRecycledItem,
   GraaspRecycleBinError,
 } from '../src/graasp-recycle-bin-errors';
-import { Item } from 'graasp';
+import build from './app';
+import { GRAASP_ACTOR, ITEMS, ITEM_FILE, ITEM_FOLDER } from './constants';
+import {
+  mockCreateGetMemberItemMembershipTask,
+  mockDeleteTask,
+  mockGetTaskSequence,
+  mockPostHookHanlder,
+} from './mocks';
 
 const itemTaskManager = new ItemTaskManager();
 const itemMembershipTaskManager = new ItemMembershipTaskManager();
@@ -73,7 +75,7 @@ describe('Plugin Tests', () => {
               .spyOn(RecycledItemService.prototype, 'isDeleted')
               .mockImplementation(async () => true);
             jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
-            expect(fn(item, actor, { log: undefined })).rejects.toEqual(
+            expect(fn({}, actor, { log: undefined }, { original: item })).rejects.toEqual(
               new CannotCopyRecycledItem(item.id),
             );
           }
@@ -89,7 +91,7 @@ describe('Plugin Tests', () => {
               .spyOn(RecycledItemService.prototype, 'isDeleted')
               .mockImplementation(async () => true);
             jest.spyOn(runner, 'runSingle').mockImplementation(async () => false);
-            expect(fn(item, actor, { log: undefined })).resolves;
+            expect(fn({}, actor, { log: undefined }, { original: item })).resolves;
           }
         });
 
@@ -338,7 +340,11 @@ describe('Plugin Tests', () => {
           itemTaskManager,
           itemMembershipTaskManager,
           runner,
-          options: { maxItemsWithResponse: 1, maxItemsInRequest: items.length, recycleItemPostHook: mockPostHookHanlder },
+          options: {
+            maxItemsWithResponse: 1,
+            maxItemsInRequest: items.length,
+            recycleItemPostHook: mockPostHookHanlder,
+          },
         });
 
         mockGetTaskSequence(items[0]);
@@ -401,7 +407,11 @@ describe('Plugin Tests', () => {
           itemTaskManager,
           itemMembershipTaskManager,
           runner,
-          options: { maxItemsInRequest: 1, maxItemsWithResponse: 1, recycleItemPostHook: mockPostHookHanlder },
+          options: {
+            maxItemsInRequest: 1,
+            maxItemsWithResponse: 1,
+            recycleItemPostHook: mockPostHookHanlder,
+          },
         });
         const items = [ITEM_FOLDER, ITEM_FILE];
 
@@ -481,7 +491,11 @@ describe('Plugin Tests', () => {
           itemTaskManager,
           itemMembershipTaskManager,
           runner,
-          options: { maxItemsWithResponse: 1, maxItemsInRequest: items.length, recycleItemPostHook: mockPostHookHanlder },
+          options: {
+            maxItemsWithResponse: 1,
+            maxItemsInRequest: items.length,
+            recycleItemPostHook: mockPostHookHanlder,
+          },
         });
 
         let innerCounter = 0;
@@ -573,7 +587,11 @@ describe('Plugin Tests', () => {
           itemTaskManager,
           itemMembershipTaskManager,
           runner,
-          options: { maxItemsWithResponse: 1, maxItemsInRequest: items.length, recycleItemPostHook: mockPostHookHanlder },
+          options: {
+            maxItemsWithResponse: 1,
+            maxItemsInRequest: items.length,
+            recycleItemPostHook: mockPostHookHanlder,
+          },
         });
 
         jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
@@ -628,7 +646,11 @@ describe('Plugin Tests', () => {
           itemTaskManager,
           itemMembershipTaskManager,
           runner,
-          options: { maxItemsInRequest: 1, maxItemsWithResponse: 1, recycleItemPostHook: mockPostHookHanlder },
+          options: {
+            maxItemsInRequest: 1,
+            maxItemsWithResponse: 1,
+            recycleItemPostHook: mockPostHookHanlder,
+          },
         });
         const items = [ITEM_FOLDER, ITEM_FILE];
 

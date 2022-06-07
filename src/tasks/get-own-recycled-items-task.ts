@@ -1,6 +1,8 @@
 // global
 import { FastifyLoggerInstance } from 'fastify';
+
 import { DatabaseTransactionHandler, Item, Member } from 'graasp';
+
 import { RecycledItemService } from '../db-service';
 import { BaseRecycleItemTask } from './base-task';
 

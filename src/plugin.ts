@@ -1,18 +1,20 @@
 import { FastifyLoggerInstance, FastifyPluginAsync } from 'fastify';
+
 import { Actor, GraaspError, IdParam, IdsParams, Item, Member, PostHookHandlerType } from 'graasp';
+
 import {
   CannotCopyRecycledItem,
   CannotGetRecycledItem,
   CannotMoveRecycledItem,
 } from './graasp-recycle-bin-errors';
 import common, {
-  recycleOne,
-  recycleMany,
-  getRecycledItems,
-  restoreOne,
-  restoreMany,
-  deleteOne,
   deleteMany,
+  deleteOne,
+  getRecycledItems,
+  recycleMany,
+  recycleOne,
+  restoreMany,
+  restoreOne,
 } from './schemas';
 import { TaskManager as RecycledItemTaskManager } from './task-manager';
 
@@ -35,7 +37,11 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     itemMemberships: { taskManager: itemMembershipTaskManager },
     taskRunner: runner,
   } = fastify;
-  const { maxItemsInRequest = 10, maxItemsWithResponse = 5, recycleItemPostHook: postHook } = options;
+  const {
+    maxItemsInRequest = 10,
+    maxItemsWithResponse = 5,
+    recycleItemPostHook: postHook,
+  } = options;
 
   const recycledItemTaskManager = new RecycledItemTaskManager();
   fastify.addSchema(common);
@@ -62,7 +68,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   // check the path: it will throw either the parent or the target is invalid
   runner.setTaskPreHookHandler<Item>(
     itemTaskManager.getCopyTaskName(),
-    async ({ id, path }, actor, { log }) => {
+    async (_copy, actor, { log }, { original: { id, path } }) => {
       if (await isRecycledItem(path, actor, log)) throw new CannotCopyRecycledItem(id);
     },
   );
@@ -99,10 +105,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     },
   );
 
-  runner.setTaskPostHookHandler<string>(
-    recycledItemTaskManager.getCreateTaskName(),
-    postHook
-  );
+  runner.setTaskPostHookHandler<string>(recycledItemTaskManager.getCreateTaskName(), postHook);
 
   // Replace recycled items with errors
   runner.setTaskPostHookHandler<(Item | GraaspError)[]>(
