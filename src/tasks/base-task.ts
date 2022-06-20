@@ -1,5 +1,6 @@
 // global
 import { FastifyLoggerInstance } from 'fastify';
+
 import {
   DatabaseTransactionHandler,
   IndividualResultType,
@@ -9,6 +10,7 @@ import {
   PreHookHandlerType,
 } from 'graasp';
 import { Task, TaskStatus } from 'graasp';
+
 // local
 import { RecycledItemService } from '../db-service';
 

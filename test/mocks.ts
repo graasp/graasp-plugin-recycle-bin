@@ -1,9 +1,9 @@
 import { Item, PostHookHandlerType } from 'graasp';
 import {
+  ItemMembershipTaskManager as MockItemMembershipTaskManager,
+  ItemTaskManager as MockItemTaskManager,
   Task as MockTask,
   TaskRunner as MockTaskRunner,
-  ItemTaskManager as MockItemTaskManager,
-  ItemMembershipTaskManager as MockItemMembershipTaskManager,
 } from 'graasp-test';
 
 // using multiple mocks updates runSingleSequence multiple times

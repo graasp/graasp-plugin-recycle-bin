@@ -7,6 +7,7 @@ import {
   Member,
   Task,
 } from 'graasp';
+
 import { RecycledItemService } from './db-service';
 import { RecycledItemTaskManager } from './interfaces/task-manager';
 import { CreateRecycledItemTask } from './tasks/create-recycled-item-task';

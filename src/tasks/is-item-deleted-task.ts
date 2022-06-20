@@ -1,5 +1,6 @@
 // global
 import { DatabaseTransactionHandler, Item, Member } from 'graasp';
+
 import { RecycledItemService } from '../db-service';
 import { InvalidItemStatus } from '../graasp-recycle-bin-errors';
 import { BaseRecycleItemTask } from './base-task';

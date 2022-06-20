@@ -1,4 +1,4 @@
-import { GraaspErrorDetails, GraaspError } from 'graasp';
+import { GraaspError, GraaspErrorDetails } from 'graasp';
 
 export class GraaspRecycleBinError implements GraaspError {
   name: string;

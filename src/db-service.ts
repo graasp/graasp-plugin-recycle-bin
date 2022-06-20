@@ -1,6 +1,8 @@
 // global
-import { sql, DatabaseTransactionConnectionType as TrxHandler } from 'slonik';
+import { DatabaseTransactionConnectionType as TrxHandler, sql } from 'slonik';
+
 import { Item } from 'graasp';
+
 import { RecycledItemEntry } from './types';
 
 export class RecycledItemService {
