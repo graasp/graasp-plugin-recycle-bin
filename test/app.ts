@@ -1,6 +1,6 @@
 import fastify from 'fastify';
 
-import { Item, ItemMembershipTaskManager, TaskRunner } from 'graasp';
+import { Item, ItemMembershipTaskManager, TaskRunner } from '@graasp/sdk';
 import { ItemTaskManager } from 'graasp-test';
 
 import plugin, { RecycleBinOptions } from '../src/plugin';

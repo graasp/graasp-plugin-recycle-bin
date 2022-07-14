@@ -8,8 +8,8 @@ import {
   Member,
   PostHookHandlerType,
   PreHookHandlerType,
-} from 'graasp';
-import { Task, TaskStatus } from 'graasp';
+} from '@graasp/sdk';
+import { Task, TaskStatus } from '@graasp/sdk';
 
 // local
 import { RecycledItemService } from '../db-service';
@@ -34,7 +34,7 @@ export abstract class BaseRecycleItemTask<R> implements Task<Member, R> {
   constructor(actor: Member, recycleItemService: RecycledItemService) {
     this.actor = actor;
     this.recycleItemService = recycleItemService;
-    this.status = 'NEW';
+    this.status = TaskStatus.NEW;
   }
 
   abstract get name(): string;

@@ -1,4 +1,4 @@
-import { Item, PostHookHandlerType } from 'graasp';
+import { Item, PostHookHandlerType } from '@graasp/sdk';
 import {
   ItemMembershipTaskManager as MockItemMembershipTaskManager,
   ItemTaskManager as MockItemTaskManager,

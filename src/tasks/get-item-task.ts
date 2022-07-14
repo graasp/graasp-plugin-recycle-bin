@@ -1,4 +1,4 @@
-import { DatabaseTransactionHandler, Item, ItemService, Member } from 'graasp';
+import { DatabaseTransactionHandler, Item, ItemService, Member, TaskStatus } from '@graasp/sdk';
 
 import { RecycledItemService } from '../db-service';
 import { BaseRecycleItemTask } from './base-task';
@@ -26,11 +26,11 @@ export class GetItemTask extends BaseRecycleItemTask<Item> {
   }
 
   async run(handler: DatabaseTransactionHandler): Promise<void> {
-    this.status = 'RUNNING';
+    this.status = TaskStatus.RUNNING;
 
     const { itemId } = this.input;
 
     this._result = await this.itemService.get(itemId, handler);
-    this.status = 'OK';
+    this.status = TaskStatus.OK;
   }
 }

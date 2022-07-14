@@ -1,7 +1,6 @@
-// global
 import { FastifyLoggerInstance } from 'fastify';
 
-import { DatabaseTransactionHandler, Item, Member } from 'graasp';
+import { DatabaseTransactionHandler, Item, Member, TaskStatus } from '@graasp/sdk';
 
 import { RecycledItemService } from '../db-service';
 import { BaseRecycleItemTask } from './base-task';
@@ -25,13 +24,13 @@ export class CreateRecycledItemTask extends BaseRecycleItemTask<string> {
   }
 
   async run(handler: DatabaseTransactionHandler, log: FastifyLoggerInstance): Promise<void> {
-    this.status = 'RUNNING';
+    this.status = TaskStatus.RUNNING;
 
     const { id: memberId } = this.actor;
     const { path } = this.input;
     await this.recycleItemService.create(this.input, memberId, handler);
     await this.postHookHandler?.(path, this.actor, { log, handler });
 
-    this.status = 'OK';
+    this.status = TaskStatus.OK;
   }
 }

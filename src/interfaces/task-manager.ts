@@ -1,4 +1,4 @@
-import { Actor, Item, Task } from 'graasp';
+import { Actor, Item, Task } from '@graasp/sdk';
 
 export interface RecycledItemTaskManager<A extends Actor = Actor> {
   getOwnTaskName(): string;

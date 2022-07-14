@@ -1,48 +1,37 @@
-import { GraaspError, GraaspErrorDetails } from 'graasp';
+import { BaseGraaspError } from '@graasp/sdk';
 
-export class GraaspRecycleBinError implements GraaspError {
-  name: string;
-  code: string;
-  message: string;
-  statusCode?: number;
-  data?: unknown;
-  origin: 'core' | 'plugin';
+import { PLUGIN_NAME } from './constants';
 
-  constructor({ code, statusCode, message }: GraaspErrorDetails, data?: unknown) {
-    this.name = code;
-    this.code = code;
-    this.message = message;
-    this.statusCode = statusCode;
-    this.data = data;
-    this.origin = 'plugin';
-  }
-}
-
-export class CannotCopyRecycledItem extends GraaspRecycleBinError {
+export class CannotCopyRecycledItem extends BaseGraaspError {
+  origin = PLUGIN_NAME;
   constructor(data?: unknown) {
     super({ code: 'GRBERR002', statusCode: 400, message: 'Cannot copy recycled item' }, data);
   }
 }
 
-export class CannotMoveRecycledItem extends GraaspRecycleBinError {
+export class CannotMoveRecycledItem extends BaseGraaspError {
+  origin = PLUGIN_NAME;
   constructor(data?: unknown) {
     super({ code: 'GRBERR003', statusCode: 400, message: 'Cannot move recycled item' }, data);
   }
 }
 
-export class CannotDeleteRecycleItem extends GraaspRecycleBinError {
+export class CannotDeleteRecycleItem extends BaseGraaspError {
+  origin = PLUGIN_NAME;
   constructor(data?: unknown) {
     super({ code: 'GRBERR004', statusCode: 400, message: 'Cannot delete recycled item' }, data);
   }
 }
 
-export class CannotGetRecycledItem extends GraaspRecycleBinError {
+export class CannotGetRecycledItem extends BaseGraaspError {
+  origin = PLUGIN_NAME;
   constructor(data?: unknown) {
     super({ code: 'GRBERR007', statusCode: 400, message: 'Cannot get recycled item' }, data);
   }
 }
 
-export class InvalidItemStatus extends GraaspRecycleBinError {
+export class InvalidItemStatus extends BaseGraaspError {
+  origin = PLUGIN_NAME;
   constructor(data?: unknown) {
     super({ code: 'GRBERR008', statusCode: 400, message: 'Invalid item status' }, data);
   }

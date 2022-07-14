@@ -2,7 +2,9 @@ import { StatusCodes } from 'http-status-codes';
 import qs from 'qs';
 import { v4 } from 'uuid';
 
-import { Item } from 'graasp';
+import { FastifyLoggerInstance } from 'fastify';
+
+import { Item } from '@graasp/sdk';
 import { ItemMembershipTaskManager, ItemTaskManager, TaskRunner } from 'graasp-test';
 
 import { RecycledItemService } from '../src/db-service';
@@ -10,7 +12,6 @@ import {
   CannotCopyRecycledItem,
   CannotGetRecycledItem,
   CannotMoveRecycledItem,
-  GraaspRecycleBinError,
 } from '../src/graasp-recycle-bin-errors';
 import build from './app';
 import { GRAASP_ACTOR, ITEMS, ITEM_FILE, ITEM_FOLDER } from './constants';
@@ -25,6 +26,7 @@ const itemTaskManager = new ItemTaskManager();
 const itemMembershipTaskManager = new ItemMembershipTaskManager();
 const runner = new TaskRunner();
 const actor = GRAASP_ACTOR;
+const MOCK_LOGGER = {} as unknown as FastifyLoggerInstance;
 
 describe('Plugin Tests', () => {
   beforeEach(() => {
@@ -43,7 +45,7 @@ describe('Plugin Tests', () => {
               .spyOn(RecycledItemService.prototype, 'isDeleted')
               .mockImplementation(async () => true);
             jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
-            expect(fn(item, actor, { log: undefined })).rejects.toEqual(
+            expect(fn(item, actor, { log: MOCK_LOGGER })).rejects.toEqual(
               new CannotMoveRecycledItem(item.id),
             );
           }
@@ -59,7 +61,7 @@ describe('Plugin Tests', () => {
               .spyOn(RecycledItemService.prototype, 'isDeleted')
               .mockImplementation(async () => true);
             jest.spyOn(runner, 'runSingle').mockImplementation(async () => false);
-            expect(fn(item, actor, { log: undefined })).resolves;
+            expect(fn(item, actor, { log: MOCK_LOGGER })).resolves;
           }
         });
 
@@ -75,7 +77,7 @@ describe('Plugin Tests', () => {
               .spyOn(RecycledItemService.prototype, 'isDeleted')
               .mockImplementation(async () => true);
             jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
-            expect(fn({}, actor, { log: undefined }, { original: item })).rejects.toEqual(
+            expect(fn({}, actor, { log: MOCK_LOGGER }, { original: item })).rejects.toEqual(
               new CannotCopyRecycledItem(item.id),
             );
           }
@@ -91,7 +93,7 @@ describe('Plugin Tests', () => {
               .spyOn(RecycledItemService.prototype, 'isDeleted')
               .mockImplementation(async () => true);
             jest.spyOn(runner, 'runSingle').mockImplementation(async () => false);
-            expect(fn({}, actor, { log: undefined }, { original: item })).resolves;
+            expect(fn({}, actor, { log: MOCK_LOGGER }, { original: item })).resolves;
           }
         });
 
@@ -113,7 +115,7 @@ describe('Plugin Tests', () => {
             jest.spyOn(runner, 'runSingle').mockImplementation(async (task) => {
               return (task.input as { item: Item })?.item.path === deletedItem.path;
             });
-            await fn(items, actor, { log: undefined });
+            await fn(items, actor, { log: MOCK_LOGGER });
             expect(items.length).toEqual(ITEMS.length - 1);
             expect(items).toEqual(ITEMS.slice(1));
           }
@@ -136,7 +138,7 @@ describe('Plugin Tests', () => {
             jest.spyOn(runner, 'runSingle').mockImplementation(async (task) => {
               return (task.input as { item: Item })?.item.path === deletedItem.path;
             });
-            await fn(items, actor, { log: undefined });
+            await fn(items, actor, { log: MOCK_LOGGER });
             expect(items.length).toEqual(ITEMS.length - 1);
             expect(items).toEqual(ITEMS.slice(1));
           }
@@ -159,7 +161,7 @@ describe('Plugin Tests', () => {
             jest.spyOn(runner, 'runSingle').mockImplementation(async (task) => {
               return (task.input as { item: Item })?.item.path === deletedItem.path;
             });
-            await fn(items, actor, { log: undefined });
+            await fn(items, actor, { log: MOCK_LOGGER });
             expect(items.length).toEqual(ITEMS.length - 1);
             expect(items).toEqual(ITEMS.slice(1));
           }
@@ -181,7 +183,7 @@ describe('Plugin Tests', () => {
             jest.spyOn(runner, 'runSingle').mockImplementation(async () => {
               return true;
             });
-            expect(fn(deletedItem, actor, { log: undefined })).rejects.toEqual(
+            expect(fn(deletedItem, actor, { log: MOCK_LOGGER })).rejects.toEqual(
               new CannotGetRecycledItem(deletedItem.id),
             );
           }
@@ -198,7 +200,7 @@ describe('Plugin Tests', () => {
               .spyOn(RecycledItemService.prototype, 'isDeleted')
               .mockImplementation(async () => true);
             jest.spyOn(runner, 'runSingle').mockImplementation(async () => false);
-            expect(fn(item, actor, { log: undefined })).resolves;
+            expect(fn(item, actor, { log: MOCK_LOGGER })).resolves;
           }
         });
 
@@ -219,7 +221,7 @@ describe('Plugin Tests', () => {
             jest.spyOn(runner, 'runSingle').mockImplementation(async (task) => {
               return (task.input as { item: Item })?.item.path === deletedItem.path;
             });
-            await fn(items, actor, { log: undefined });
+            await fn(items, actor, { log: MOCK_LOGGER });
             expect(items.length).toEqual(ITEMS.length);
             expect(items[0]).toEqual(new CannotGetRecycledItem(deletedItem.id));
             expect(items[1]).toEqual(ITEMS[1]);
@@ -368,11 +370,7 @@ describe('Plugin Tests', () => {
       it('Returns error in array if one item failed to be recycled', async () => {
         const app = await build({ itemTaskManager, itemMembershipTaskManager, runner });
         const items = [ITEM_FOLDER, ITEM_FILE];
-        const error = new GraaspRecycleBinError({
-          code: 'code',
-          statusCode: StatusCodes.FORBIDDEN,
-          message: 'error message',
-        });
+        const error = new CannotCopyRecycledItem();
 
         mockGetTaskSequence(items[0]);
         mockCreateGetMemberItemMembershipTask(items[0]);
@@ -613,11 +611,7 @@ describe('Plugin Tests', () => {
       it('Returns error in array if one item failed to be deleted', async () => {
         const app = await build({ itemTaskManager, itemMembershipTaskManager, runner });
         const items = [ITEM_FOLDER, ITEM_FILE];
-        const error = new GraaspRecycleBinError({
-          code: 'code',
-          statusCode: StatusCodes.FORBIDDEN,
-          message: 'error message',
-        });
+        const error = new CannotCopyRecycledItem();
 
         jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
         const mock = mockCreateGetMemberItemMembershipTask(items[0]);
