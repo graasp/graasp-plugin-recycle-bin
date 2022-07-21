@@ -1,4 +1,4 @@
-import { Item, PostHookHandlerType } from '@graasp/sdk';
+import { Item, ItemMembership, PostHookHandlerType } from '@graasp/sdk';
 import {
   ItemMembershipTaskManager as MockItemMembershipTaskManager,
   ItemTaskManager as MockItemTaskManager,
@@ -41,15 +41,14 @@ export const mockDeleteTask = (
 };
 
 // item memberships
-
 export const mockCreateGetMemberItemMembershipTask = (
-  data: Partial<Item> | Error,
+  data: Partial<ItemMembership> | Error,
   shouldThrow?: boolean,
 ): jest.SpyInstance => {
   const mockTask = jest
     .spyOn(MockItemMembershipTaskManager.prototype, 'createGetMemberItemMembershipTask')
     .mockImplementation(() => {
-      return new MockTask(data);
+      return new MockTask<ItemMembership>(data);
     });
   jest.spyOn(MockTaskRunner.prototype, 'runSingle').mockImplementation(async () => {
     if (shouldThrow) throw data;
@@ -58,4 +57,6 @@ export const mockCreateGetMemberItemMembershipTask = (
   return mockTask;
 };
 
-export const mockPostHookHanlder: PostHookHandlerType<string> = () => null;
+export const mockPostHookHanlder: PostHookHandlerType<string> = () => {
+  // do nothing
+};
