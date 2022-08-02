@@ -1,5 +1,4 @@
-// global
-import { DatabaseTransactionHandler, Member } from 'graasp';
+import { DatabaseTransactionHandler, Member, TaskStatus } from '@graasp/sdk';
 
 import { RecycledItemService } from '../db-service';
 import { BaseRecycleItemTask } from './base-task';
@@ -24,12 +23,12 @@ export class DeleteRecycledItemTask extends BaseRecycleItemTask<string> {
   }
 
   async run(handler: DatabaseTransactionHandler): Promise<void> {
-    this.status = 'RUNNING';
+    this.status = TaskStatus.RUNNING;
 
     await this.recycleItemService.delete(this.input, handler);
     // return id of the item
     this._result = this.input;
 
-    this.status = 'OK';
+    this.status = TaskStatus.OK;
   }
 }

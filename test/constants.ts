@@ -1,6 +1,6 @@
 import { v4 } from 'uuid';
 
-import { Actor, Item } from 'graasp';
+import { Actor, Item } from '@graasp/sdk';
 
 export const ITEM_FILE: Item = {
   id: v4(),

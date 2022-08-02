@@ -6,7 +6,7 @@ import {
   ItemTaskManager,
   Member,
   Task,
-} from 'graasp';
+} from '@graasp/sdk';
 
 import { RecycledItemService } from './db-service';
 import { RecycledItemTaskManager } from './interfaces/task-manager';

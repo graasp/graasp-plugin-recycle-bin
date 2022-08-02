@@ -1,6 +1,14 @@
 import { FastifyLoggerInstance, FastifyPluginAsync } from 'fastify';
 
-import { Actor, GraaspError, IdParam, IdsParams, Item, Member, PostHookHandlerType } from 'graasp';
+import {
+  Actor,
+  GraaspError,
+  IdParam,
+  IdsParams,
+  Item,
+  Member,
+  PostHookHandlerType,
+} from '@graasp/sdk';
 
 import {
   CannotCopyRecycledItem,

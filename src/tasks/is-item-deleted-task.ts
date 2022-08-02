@@ -1,5 +1,5 @@
 // global
-import { DatabaseTransactionHandler, Item, Member } from 'graasp';
+import { DatabaseTransactionHandler, Item, Member, TaskStatus } from '@graasp/sdk';
 
 import { RecycledItemService } from '../db-service';
 import { InvalidItemStatus } from '../graasp-recycle-bin-errors';
@@ -24,7 +24,7 @@ export class IsItemDeletedTask extends BaseRecycleItemTask<boolean> {
   }
 
   async run(handler: DatabaseTransactionHandler): Promise<void> {
-    this.status = 'RUNNING';
+    this.status = TaskStatus.RUNNING;
 
     const { item, validate } = this.input;
     const isDeleted = await this.recycleItemService.isDeleted(item.path, handler);
@@ -35,6 +35,6 @@ export class IsItemDeletedTask extends BaseRecycleItemTask<boolean> {
     }
 
     this._result = isDeleted;
-    this.status = 'OK';
+    this.status = TaskStatus.OK;
   }
 }
