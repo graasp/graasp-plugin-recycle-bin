@@ -147,6 +147,29 @@ describe('Plugin Tests', () => {
         await build({ itemTaskManager, runner, itemMembershipTaskManager });
       });
     });
+    describe('Get Descendants Post Hook Handler', () => {
+      it('Filter items on get descendants', async () => {
+        jest.spyOn(runner, 'setTaskPreHookHandler').mockImplementation(async () => false);
+        jest.spyOn(runner, 'setTaskPostHookHandler').mockImplementation(async (name, fn) => {
+          const deletedItem = ITEM_FOLDER;
+          const items = [...ITEMS];
+          if (name === itemTaskManager.getGetDescendantsTaskName()) {
+            // only folder item is deleted
+            jest
+              .spyOn(RecycledItemService.prototype, 'isDeleted')
+              .mockImplementation(async () => true);
+            jest.spyOn(runner, 'runSingle').mockImplementation(async (task) => {
+              return (task.input as { item: Item })?.item.path === deletedItem.path;
+            });
+            await fn(items, actor, { log: MOCK_LOGGER });
+            expect(items.length).toEqual(ITEMS.length - 1);
+            expect(items).toEqual(ITEMS.slice(1));
+          }
+        });
+
+        await build({ itemTaskManager, runner, itemMembershipTaskManager });
+      });
+    });
     describe('Get Shared Items Hook Handler', () => {
       it('Filter items on get shared items', async () => {
         jest.spyOn(runner, 'setTaskPreHookHandler').mockImplementation(async () => false);
