@@ -96,10 +96,7 @@ export class RecycledItemService {
             SELECT item_path, permission,
               RANK() OVER (PARTITION BY subpath(item_path, 0, 1) ORDER BY item_path ASC) AS membership_rank
             FROM item_membership
-            WHERE member_id = ${memberId} AND permission IN (${sql.join(
-            [PermissionLevel.Admin, PermissionLevel.Write],
-            sql`, `,
-          )})
+            WHERE member_id = ${memberId} AND permission = ${PermissionLevel.Admin}
           ) AS t1
           INNER JOIN item
             ON  t1.item_path @> item.path
