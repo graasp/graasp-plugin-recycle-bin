@@ -1,6 +1,6 @@
 import { DatabaseTransactionConnection as TrxHandler, sql } from 'slonik';
 
-import { Item } from '@graasp/sdk';
+import { Item, PermissionLevel } from '@graasp/sdk';
 
 import { RecycledItemEntry } from './types';
 
@@ -96,7 +96,10 @@ export class RecycledItemService {
             SELECT item_path, permission,
               RANK() OVER (PARTITION BY subpath(item_path, 0, 1) ORDER BY item_path ASC) AS membership_rank
             FROM item_membership
-            WHERE member_id = ${memberId}
+            WHERE member_id = ${memberId} AND t1.permission IN (${sql.join(
+            [PermissionLevel.Admin, PermissionLevel.Write],
+            sql`, `,
+          )})
           ) AS t1
           INNER JOIN item
             ON  t1.item_path @> item.path
@@ -117,7 +120,7 @@ export class RecycledItemService {
     return transactionHandler
       .query<Item>(
         sql`
-        SELECT *
+        SELECT id
         FROM recycled_item
         WHERE item_path @> ${itemPath}
       `,

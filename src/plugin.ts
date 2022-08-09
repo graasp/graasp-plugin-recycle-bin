@@ -113,6 +113,14 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     },
   );
 
+  // Hide recycled items when getting descendants
+  runner.setTaskPostHookHandler<Item[]>(
+    itemTaskManager.getGetDescendantsTaskName(),
+    async (items, actor, { log }) => {
+      await removeRecycledItems(items, actor, log);
+    },
+  );
+
   runner.setTaskPostHookHandler<string>(recycledItemTaskManager.getCreateTaskName(), postHook);
 
   // Replace recycled items with errors
