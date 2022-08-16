@@ -1,4 +1,3 @@
-// global
 import { FastifyLoggerInstance } from 'fastify';
 
 import { DatabaseTransactionHandler, Item, Member, TaskStatus } from '@graasp/sdk';

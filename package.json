@@ -29,6 +29,7 @@
   },
   "homepage": "https://github.com/graasp/graasp-recycle-bin#readme",
   "dependencies": {
+    "@graasp/translations": "github:graasp/graasp-translations#30-item-zip",
     "http-status-codes": "^2.2.0"
   },
   "devDependencies": {
