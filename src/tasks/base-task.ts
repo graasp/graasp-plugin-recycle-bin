@@ -1,4 +1,3 @@
-// global
 import { FastifyLoggerInstance } from 'fastify';
 
 import {
@@ -11,7 +10,6 @@ import {
 } from '@graasp/sdk';
 import { Task, TaskStatus } from '@graasp/sdk';
 
-// local
 import { RecycledItemService } from '../db-service';
 
 export abstract class BaseRecycleItemTask<R> implements Task<Member, R> {

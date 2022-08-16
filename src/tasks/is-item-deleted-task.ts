@@ -1,4 +1,3 @@
-// global
 import { DatabaseTransactionHandler, Item, Member, TaskStatus } from '@graasp/sdk';
 
 import { RecycledItemService } from '../db-service';
@@ -31,7 +30,8 @@ export class IsItemDeletedTask extends BaseRecycleItemTask<boolean> {
 
     // if item should be validate, throw if it doesn't satisfy validate input
     if (typeof validate === 'boolean') {
-      if (isDeleted !== validate) throw new InvalidItemStatus({ item, isDeleted });
+      if (isDeleted !== validate)
+        throw new InvalidItemStatus({ item, shouldBeDeleted: validate, isDeleted });
     }
 
     this._result = isDeleted;
