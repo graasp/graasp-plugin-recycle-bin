@@ -857,12 +857,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graasp/translations@github:graasp/graasp-translations#30-item-zip":
+"@graasp/translations@github:graasp/graasp-translations":
   version: 0.1.0
-  resolution: "@graasp/translations@https://github.com/graasp/graasp-translations.git#commit=f391e5e3df5387cef1a973f742a78c0e0f57fca0"
+  resolution: "@graasp/translations@https://github.com/graasp/graasp-translations.git#commit=be598da34ba1dda3a95c2dea737dacfad78b50fd"
   dependencies:
     i18next: 21.8.1
-  checksum: 77534bd75e876b8255135cebea9079bfd2fc8e8cb5cec3b07dd4d7207e59dd3838f0dfae79cce2818eaf9b24340d203180f1600b2b99e9a856bdde2217a02fb3
+  checksum: bd2d9012e7abf7c61e406b5540e5719967e3007729d0361ade3cfd9e34c3da6a2545bd763eb259a182ecd99db02932d1e61fe1c40688e9d5b557fc6beec84d86
   languageName: node
   linkType: hard
 
@@ -3444,7 +3444,7 @@ __metadata:
     "@commitlint/cli": 16.0.1
     "@commitlint/config-conventional": 16.0.0
     "@graasp/sdk": "github:graasp/graasp-sdk"
-    "@graasp/translations": "github:graasp/graasp-translations#30-item-zip"
+    "@graasp/translations": "github:graasp/graasp-translations"
     "@trivago/prettier-plugin-sort-imports": 3.2.0
     "@types/eslint": ^8.2.2
     "@types/jest": ^27.4.0
