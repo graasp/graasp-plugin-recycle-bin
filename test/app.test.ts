@@ -4,7 +4,6 @@ import { v4 } from 'uuid';
 
 import { FastifyLoggerInstance } from 'fastify';
 
-import { Item } from '@graasp/sdk';
 import { ItemMembershipTaskManager, ItemTaskManager, TaskRunner } from 'graasp-test';
 
 import { RecycledItemService } from '../src/db-service';
