@@ -66,7 +66,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
       db.pool,
     );
     const filteredItems = items.map((item) => {
-      return recycledItems.find((id) => id === item.id) ? null : item;
+      return recycledItems.find(({ path }) => item.path.includes(path)) ? null : item;
     });
 
     // split for in-place changes in the array
@@ -136,8 +136,10 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
         db.pool,
       );
       const filteredItems = items.map((item) => {
-        const itemId = (item as Item).id;
-        return recycledItems.find((id) => id === itemId) ? new CannotGetRecycledItem(itemId) : item;
+        const itemPath = (item as Item).path;
+        return recycledItems.find(({ path }) => itemPath.includes(path))
+          ? new CannotGetRecycledItem(itemPath)
+          : item;
       });
       // split for in-place changes in the array
       items.splice(0, items.length, ...filteredItems.filter(Boolean));

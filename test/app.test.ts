@@ -105,13 +105,13 @@ describe('Plugin Tests', () => {
       it('Filter items on get own items', async () => {
         jest.spyOn(runner, 'setTaskPreHookHandler').mockImplementation(async () => false);
         jest.spyOn(runner, 'setTaskPostHookHandler').mockImplementation(async (name, fn) => {
-          const deletedItem = ITEM_FOLDER;
+          const deletedItemPath = ITEM_FOLDER.path;
           const items = [...ITEMS];
           if (name === itemTaskManager.getGetOwnTaskName()) {
             // only folder item is deleted
             jest
               .spyOn(RecycledItemService.prototype, 'areDeleted')
-              .mockImplementation(async () => [deletedItem.id]);
+              .mockImplementation(async () => [{ path: deletedItemPath }]);
             await fn(items, actor, { log: MOCK_LOGGER });
             expect(items.length).toEqual(ITEMS.length - 1);
             expect(items).toEqual(ITEMS.slice(1));
@@ -125,13 +125,13 @@ describe('Plugin Tests', () => {
       it('Filter items on get children', async () => {
         jest.spyOn(runner, 'setTaskPreHookHandler').mockImplementation(async () => false);
         jest.spyOn(runner, 'setTaskPostHookHandler').mockImplementation(async (name, fn) => {
-          const deletedItem = ITEM_FOLDER;
+          const deletedItemPath = ITEM_FOLDER.path;
           const items = [...ITEMS];
           if (name === itemTaskManager.getGetChildrenTaskName()) {
             // only folder item is deleted
             jest
               .spyOn(RecycledItemService.prototype, 'areDeleted')
-              .mockImplementation(async () => [deletedItem.id]);
+              .mockImplementation(async () => [{ path: deletedItemPath }]);
             await fn(items, actor, { log: MOCK_LOGGER });
             expect(items.length).toEqual(ITEMS.length - 1);
             expect(items).toEqual(ITEMS.slice(1));
@@ -145,13 +145,13 @@ describe('Plugin Tests', () => {
       it('Filter items on get descendants', async () => {
         jest.spyOn(runner, 'setTaskPreHookHandler').mockImplementation(async () => false);
         jest.spyOn(runner, 'setTaskPostHookHandler').mockImplementation(async (name, fn) => {
-          const deletedItem = ITEM_FOLDER;
+          const deletedItemPath = ITEM_FOLDER.path;
           const items = [...ITEMS];
           if (name === itemTaskManager.getGetDescendantsTaskName()) {
             // only folder item is deleted
             jest
               .spyOn(RecycledItemService.prototype, 'areDeleted')
-              .mockImplementation(async () => [deletedItem.id]);
+              .mockImplementation(async () => [{ path: deletedItemPath }]);
             await fn(items, actor, { log: MOCK_LOGGER });
             expect(items.length).toEqual(ITEMS.length - 1);
             expect(items).toEqual(ITEMS.slice(1));
@@ -165,13 +165,13 @@ describe('Plugin Tests', () => {
       it('Filter items on get shared items', async () => {
         jest.spyOn(runner, 'setTaskPreHookHandler').mockImplementation(async () => false);
         jest.spyOn(runner, 'setTaskPostHookHandler').mockImplementation(async (name, fn) => {
-          const deletedItem = ITEM_FOLDER;
+          const deletedItemPath = ITEM_FOLDER.path;
           const items = [...ITEMS];
           if (name === itemTaskManager.getGetSharedWithTaskName()) {
             // only folder item is deleted
             jest
               .spyOn(RecycledItemService.prototype, 'areDeleted')
-              .mockImplementation(async () => [deletedItem.id]);
+              .mockImplementation(async () => [{ path: deletedItemPath }]);
             await fn(items, actor, { log: MOCK_LOGGER });
             expect(items.length).toEqual(ITEMS.length - 1);
             expect(items).toEqual(ITEMS.slice(1));
@@ -222,16 +222,16 @@ describe('Plugin Tests', () => {
       it('Replace items with errors if deleted on get many items', async () => {
         jest.spyOn(runner, 'setTaskPreHookHandler').mockImplementation(async () => false);
         jest.spyOn(runner, 'setTaskPostHookHandler').mockImplementation(async (name, fn) => {
-          const deletedItem = ITEM_FOLDER;
+          const deletedItemPath = ITEM_FOLDER.path;
           const items = [...ITEMS];
           if (name === itemTaskManager.getGetManyTaskName()) {
             // only folder item is deleted
             jest
               .spyOn(RecycledItemService.prototype, 'areDeleted')
-              .mockImplementation(async () => [deletedItem.id]);
+              .mockImplementation(async () => [{ path: deletedItemPath }]);
             await fn(items, actor, { log: MOCK_LOGGER });
             expect(items.length).toEqual(ITEMS.length);
-            expect(items[0]).toEqual(new CannotGetRecycledItem(deletedItem.id));
+            expect(items[0]).toEqual(new CannotGetRecycledItem(deletedItemPath));
             expect(items[1]).toEqual(ITEMS[1]);
           }
         });
