@@ -6,10 +6,13 @@ import {
   IdParam,
   IdsParams,
   Item,
+  MAX_TARGETS_FOR_MODIFY_REQUEST,
+  MAX_TARGETS_FOR_READ_REQUEST,
   Member,
   PostHookHandlerType,
 } from '@graasp/sdk';
 
+import { RecycledItemService } from './db-service';
 import {
   CannotCopyRecycledItem,
   CannotGetRecycledItem,
@@ -44,23 +47,29 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     items: { taskManager: itemTaskManager, dbService: itemService },
     itemMemberships: { taskManager: itemMembershipTaskManager },
     taskRunner: runner,
+    db,
   } = fastify;
   const {
-    maxItemsInRequest = 10,
-    maxItemsWithResponse = 5,
+    maxItemsInRequest = MAX_TARGETS_FOR_READ_REQUEST,
+    maxItemsWithResponse = MAX_TARGETS_FOR_MODIFY_REQUEST,
     recycleItemPostHook: postHook,
   } = options;
 
-  const recycledItemTaskManager = new RecycledItemTaskManager();
+  const recycledItemService = new RecycledItemService();
+  const recycledItemTaskManager = new RecycledItemTaskManager(recycledItemService);
   fastify.addSchema(common);
 
-  const removeRecycledItems = async (items, actor, log) => {
-    const filteredItems = await Promise.all(
-      items.map(async (item) => {
-        const isDeleted = await isRecycledItem(item.path, actor, log);
-        return !isDeleted ? item : null;
-      }),
+  const removeRecycledItems = async (items) => {
+    // get recycled ids from given item paths and filter them out
+    const recycledItems = await recycledItemService.areDeleted(
+      items.map(({ path }) => path),
+      db.pool,
     );
+    const filteredItems = items.map((item) => {
+      return recycledItems.find((id) => id === item.id) ? null : item;
+    });
+
+    // split for in-place changes in the array
     items.splice(0, items.length, ...filteredItems.filter(Boolean));
   };
 
@@ -90,34 +99,28 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   );
 
   // Hide recycled items when getting own items
-  runner.setTaskPostHookHandler<Item[]>(
-    itemTaskManager.getGetOwnTaskName(),
-    async (items, actor, { log }) => {
-      await removeRecycledItems(items, actor, log);
-    },
-  );
+  runner.setTaskPostHookHandler<Item[]>(itemTaskManager.getGetOwnTaskName(), async (items) => {
+    await removeRecycledItems(items);
+  });
 
   // Hide recycled items when getting shared items
   runner.setTaskPostHookHandler<Item[]>(
     itemTaskManager.getGetSharedWithTaskName(),
-    async (items, actor, { log }) => {
-      await removeRecycledItems(items, actor, log);
+    async (items) => {
+      await removeRecycledItems(items);
     },
   );
 
   // Hide recycled items when getting children
-  runner.setTaskPostHookHandler<Item[]>(
-    itemTaskManager.getGetChildrenTaskName(),
-    async (items, actor, { log }) => {
-      await removeRecycledItems(items, actor, log);
-    },
-  );
+  runner.setTaskPostHookHandler<Item[]>(itemTaskManager.getGetChildrenTaskName(), async (items) => {
+    await removeRecycledItems(items);
+  });
 
   // Hide recycled items when getting descendants
   runner.setTaskPostHookHandler<Item[]>(
     itemTaskManager.getGetDescendantsTaskName(),
-    async (items, actor, { log }) => {
-      await removeRecycledItems(items, actor, log);
+    async (items) => {
+      await removeRecycledItems(items);
     },
   );
 
@@ -126,13 +129,18 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   // Replace recycled items with errors
   runner.setTaskPostHookHandler<(Item | GraaspError)[]>(
     itemTaskManager.getGetManyTaskName(),
-    async (items, actor, { log }) => {
-      for (const [idx, value] of items.entries()) {
-        const item = value as Item;
-        if (await isRecycledItem(item.path, actor, log)) {
-          items[idx] = new CannotGetRecycledItem(item.id);
-        }
-      }
+    async (items) => {
+      // get recycled ids from given item paths and filter them out
+      const recycledItems = await recycledItemService.areDeleted(
+        items.map((item) => (item as Item)?.path).filter(Boolean),
+        db.pool,
+      );
+      const filteredItems = items.map((item) => {
+        const itemId = (item as Item).id;
+        return recycledItems.find((id) => id === itemId) ? new CannotGetRecycledItem(itemId) : item;
+      });
+      // split for in-place changes in the array
+      items.splice(0, items.length, ...filteredItems.filter(Boolean));
     },
   );
 
@@ -301,6 +309,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     return runner.runSingle(t1, log);
   }
 
+  // warning: avoid this function if this is used on many items AND in hooks
   async function isRecycledItem(path: string, member: Actor, log: FastifyLoggerInstance) {
     const t1 = recycledItemTaskManager.createIsDeletedTask(member as Member, { item: { path } });
     return runner.runSingle(t1, log);

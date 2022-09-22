@@ -110,11 +110,8 @@ describe('Plugin Tests', () => {
           if (name === itemTaskManager.getGetOwnTaskName()) {
             // only folder item is deleted
             jest
-              .spyOn(RecycledItemService.prototype, 'isDeleted')
-              .mockImplementation(async () => true);
-            jest.spyOn(runner, 'runSingle').mockImplementation(async (task) => {
-              return (task.input as { item: Item })?.item.path === deletedItem.path;
-            });
+              .spyOn(RecycledItemService.prototype, 'areDeleted')
+              .mockImplementation(async () => [deletedItem.id]);
             await fn(items, actor, { log: MOCK_LOGGER });
             expect(items.length).toEqual(ITEMS.length - 1);
             expect(items).toEqual(ITEMS.slice(1));
@@ -133,11 +130,8 @@ describe('Plugin Tests', () => {
           if (name === itemTaskManager.getGetChildrenTaskName()) {
             // only folder item is deleted
             jest
-              .spyOn(RecycledItemService.prototype, 'isDeleted')
-              .mockImplementation(async () => true);
-            jest.spyOn(runner, 'runSingle').mockImplementation(async (task) => {
-              return (task.input as { item: Item })?.item.path === deletedItem.path;
-            });
+              .spyOn(RecycledItemService.prototype, 'areDeleted')
+              .mockImplementation(async () => [deletedItem.id]);
             await fn(items, actor, { log: MOCK_LOGGER });
             expect(items.length).toEqual(ITEMS.length - 1);
             expect(items).toEqual(ITEMS.slice(1));
@@ -156,11 +150,8 @@ describe('Plugin Tests', () => {
           if (name === itemTaskManager.getGetDescendantsTaskName()) {
             // only folder item is deleted
             jest
-              .spyOn(RecycledItemService.prototype, 'isDeleted')
-              .mockImplementation(async () => true);
-            jest.spyOn(runner, 'runSingle').mockImplementation(async (task) => {
-              return (task.input as { item: Item })?.item.path === deletedItem.path;
-            });
+              .spyOn(RecycledItemService.prototype, 'areDeleted')
+              .mockImplementation(async () => [deletedItem.id]);
             await fn(items, actor, { log: MOCK_LOGGER });
             expect(items.length).toEqual(ITEMS.length - 1);
             expect(items).toEqual(ITEMS.slice(1));
@@ -179,11 +170,8 @@ describe('Plugin Tests', () => {
           if (name === itemTaskManager.getGetSharedWithTaskName()) {
             // only folder item is deleted
             jest
-              .spyOn(RecycledItemService.prototype, 'isDeleted')
-              .mockImplementation(async () => true);
-            jest.spyOn(runner, 'runSingle').mockImplementation(async (task) => {
-              return (task.input as { item: Item })?.item.path === deletedItem.path;
-            });
+              .spyOn(RecycledItemService.prototype, 'areDeleted')
+              .mockImplementation(async () => [deletedItem.id]);
             await fn(items, actor, { log: MOCK_LOGGER });
             expect(items.length).toEqual(ITEMS.length - 1);
             expect(items).toEqual(ITEMS.slice(1));
@@ -239,11 +227,8 @@ describe('Plugin Tests', () => {
           if (name === itemTaskManager.getGetManyTaskName()) {
             // only folder item is deleted
             jest
-              .spyOn(RecycledItemService.prototype, 'isDeleted')
-              .mockImplementation(async () => true);
-            jest.spyOn(runner, 'runSingle').mockImplementation(async (task) => {
-              return (task.input as { item: Item })?.item.path === deletedItem.path;
-            });
+              .spyOn(RecycledItemService.prototype, 'areDeleted')
+              .mockImplementation(async () => [deletedItem.id]);
             await fn(items, actor, { log: MOCK_LOGGER });
             expect(items.length).toEqual(ITEMS.length);
             expect(items[0]).toEqual(new CannotGetRecycledItem(deletedItem.id));

@@ -17,7 +17,11 @@ import { GetOwnRecycledItemsTask } from './tasks/get-own-recycled-items-task';
 import { IsItemDeletedTask } from './tasks/is-item-deleted-task';
 
 export class TaskManager implements RecycledItemTaskManager<Member> {
-  private recycledItemService = new RecycledItemService();
+  private recycledItemService: RecycledItemService;
+
+  constructor(recycledItemService: RecycledItemService) {
+    this.recycledItemService = recycledItemService;
+  }
 
   getOwnTaskName(): string {
     return GetOwnRecycledItemsTask.name;

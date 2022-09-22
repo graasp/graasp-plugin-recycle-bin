@@ -115,7 +115,7 @@ export class RecycledItemService {
    */
   async isDeleted(itemPath: string, transactionHandler: TrxHandler): Promise<boolean> {
     return transactionHandler
-      .query<Pick<Item, 'id'>>(
+      .query<string>(
         sql`
         SELECT id
         FROM recycled_item
@@ -123,5 +123,21 @@ export class RecycledItemService {
       `,
       )
       .then(({ rows }) => Boolean(rows.length));
+  }
+
+  /**
+   * Get item ids are deleted
+   * @param transactionHandler Database transaction handler
+   */
+  async areDeleted(itemPaths: string[], transactionHandler: TrxHandler): Promise<string[]> {
+    return transactionHandler
+      .query<string>(
+        sql`
+        SELECT id
+        FROM recycled_item
+        WHERE item_path @> ${itemPaths}
+      `,
+      )
+      .then(({ rows }) => rows.slice(0));
   }
 }
