@@ -119,6 +119,22 @@ describe('Plugin Tests', () => {
 
         await build({ itemTaskManager, runner, itemMembershipTaskManager });
       });
+      it('Pass for empty items', async () => {
+        jest.spyOn(runner, 'setTaskPreHookHandler').mockImplementation(async () => false);
+        jest.spyOn(runner, 'setTaskPostHookHandler').mockImplementation(async (name, fn) => {
+          const items = [];
+          if (name === itemTaskManager.getGetOwnTaskName()) {
+            // only folder item is deleted
+            jest
+              .spyOn(RecycledItemService.prototype, 'areDeleted')
+              .mockImplementation(async () => []);
+            await fn(items, actor, { log: MOCK_LOGGER });
+            expect(items).toEqual([]);
+          }
+        });
+
+        await build({ itemTaskManager, runner, itemMembershipTaskManager });
+      });
     });
     describe('Get Children Post Hook Handler', () => {
       it('Filter items on get children', async () => {

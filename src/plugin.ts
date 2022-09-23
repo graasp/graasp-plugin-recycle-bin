@@ -60,6 +60,9 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   fastify.addSchema(common);
 
   const removeRecycledItems = async (items) => {
+    if (!items || !items.length) {
+      return;
+    }
     // get recycled ids from given item paths and filter them out
     const recycledItems = await recycledItemService.areDeleted(
       items.map(({ path }) => path),
