@@ -3458,7 +3458,7 @@ __metadata:
     eslint-plugin-prettier: ^4.0.0
     fastify: ^3.29.1
     graasp-item-tags: "github:graasp/graasp-item-tags"
-    graasp-test: "github:graasp/graasp-test#25-item-type"
+    graasp-test: "github:graasp/graasp-test"
     http-status-codes: ^2.2.0
     husky: 7.0.4
     jest: ^27.4.7
@@ -3472,9 +3472,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"graasp-test@github:graasp/graasp-test#25-item-type":
+"graasp-test@github:graasp/graasp-test":
   version: 0.1.0
-  resolution: "graasp-test@https://github.com/graasp/graasp-test.git#commit=2f3a238506012be0da80b5ac899b4e13dd4c887d"
+  resolution: "graasp-test@https://github.com/graasp/graasp-test.git#commit=dd6ca72cf4be7483c9232f99d17186e7c441c601"
   dependencies:
     uuid: 8.3.2
   checksum: e4fcc3e4a9434bb590f26610c3d2bdff4f493e4b9257e947eb485649580acbccad4cf100f9335fe1f061b89bbe1209a1bea0ce5d5337af5f1ed6c619915d669f

@@ -59,6 +59,10 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   const recycledItemTaskManager = new RecycledItemTaskManager(recycledItemService);
   fastify.addSchema(common);
 
+  /**
+   * In-place filter out items, used in pre/post-hooks
+   * @param items items array which get filtered out recycled items (in-place)
+   */
   const removeRecycledItems = async (items) => {
     if (!items || !items.length) {
       return;
@@ -68,6 +72,8 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
       items.map(({ path }) => path),
       db.pool,
     );
+
+    // keep only non-deleted items
     const filteredItems = items.map((item) => {
       return recycledItems.find(({ path }) => item.path.includes(path)) ? null : item;
     });
@@ -138,6 +144,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
         items.map((item) => (item as Item)?.path).filter(Boolean),
         db.pool,
       );
+      // replace deleted items with errors
       const filteredItems = items.map((item) => {
         const itemPath = (item as Item).path;
         return recycledItems.find(({ path }) => itemPath.includes(path))
@@ -145,7 +152,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
           : item;
       });
       // split for in-place changes in the array
-      items.splice(0, items.length, ...filteredItems.filter(Boolean));
+      items.splice(0, items.length, ...filteredItems);
     },
   );
 
