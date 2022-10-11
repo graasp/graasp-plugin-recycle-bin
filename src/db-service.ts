@@ -124,4 +124,28 @@ export class RecycledItemService {
       )
       .then(({ rows }) => Boolean(rows.length));
   }
+
+  /**
+   * Get item ids are deleted
+   * @param transactionHandler Database transaction handler
+   */
+  async areDeleted(
+    itemPaths: string[],
+    transactionHandler: TrxHandler,
+  ): Promise<Pick<Item, 'path'>[]> {
+    const whereCondition = sql.join(
+      itemPaths.map((path) => sql`item_path @> ${path}`),
+      sql` OR `,
+    );
+
+    return transactionHandler
+      .query<Pick<Item, 'path'>>(
+        sql`
+        SELECT item_path as path
+        FROM recycled_item
+        WHERE ${whereCondition}
+      `,
+      )
+      .then(({ rows }) => rows.slice(0));
+  }
 }

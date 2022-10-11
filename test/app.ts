@@ -1,6 +1,11 @@
 import fastify from 'fastify';
 
-import { Item, ItemMembershipTaskManager, TaskRunner } from '@graasp/sdk';
+import {
+  DatabaseTransactionHandler,
+  Item,
+  ItemMembershipTaskManager,
+  TaskRunner,
+} from '@graasp/sdk';
 import { ItemTaskManager } from 'graasp-test';
 
 import plugin, { RecycleBinOptions } from '../src/plugin';
@@ -45,6 +50,10 @@ const build = async ({
   });
   app.decorate('itemMemberships', {
     taskManager: itemMembershipTaskManager,
+  });
+
+  app.decorate('db', {
+    pool: {} as unknown as DatabaseTransactionHandler,
   });
 
   await app.register(plugin, options);
