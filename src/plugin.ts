@@ -2,6 +2,7 @@ import { FastifyLoggerInstance, FastifyPluginAsync } from 'fastify';
 
 import {
   Actor,
+  DatabaseTransactionHandler,
   GraaspError,
   IdParam,
   IdsParams,
@@ -47,7 +48,6 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     items: { taskManager: itemTaskManager, dbService: itemService },
     itemMemberships: { taskManager: itemMembershipTaskManager },
     taskRunner: runner,
-    db,
   } = fastify;
   const {
     maxItemsInRequest = MAX_TARGETS_FOR_READ_REQUEST,
@@ -59,18 +59,19 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   const recycledItemTaskManager = new RecycledItemTaskManager(recycledItemService);
   fastify.addSchema(common);
 
+  // THIS FUNCTION IS USED IN HOOKS ONLY
   /**
    * In-place filter out items, used in pre/post-hooks
    * @param items items array which get filtered out recycled items (in-place)
    */
-  const removeRecycledItems = async (items) => {
+  const removeRecycledItems = async (items, handler) => {
     if (!items || !items.length) {
       return;
     }
     // get recycled ids from given item paths and filter them out
     const recycledItems = await recycledItemService.areDeleted(
       items.map(({ path }) => path),
-      db.pool,
+      handler,
     );
 
     // keep only non-deleted items
@@ -85,8 +86,8 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   // Prevent moving of recycled item
   runner.setTaskPreHookHandler<Item>(
     itemTaskManager.getMoveTaskName(),
-    async ({ id, path }, actor, { log }) => {
-      if (await isRecycledItem(path, actor, log)) throw new CannotMoveRecycledItem(id);
+    async ({ id, path }, actor, { log, handler }) => {
+      if (await isRecycledItem(path, actor, log, handler)) throw new CannotMoveRecycledItem(id);
     },
   );
 
@@ -94,42 +95,48 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   // check the path: it will throw either the parent or the target is invalid
   runner.setTaskPreHookHandler<Item>(
     itemTaskManager.getCopyTaskName(),
-    async (_copy, actor, { log }, { original: { id, path } }) => {
-      if (await isRecycledItem(path, actor, log)) throw new CannotCopyRecycledItem(id);
+    async (_copy, actor, { log, handler }, { original: { id, path } }) => {
+      if (await isRecycledItem(path, actor, log, handler)) throw new CannotCopyRecycledItem(id);
     },
   );
 
   // Prevent getting recycled item
   runner.setTaskPostHookHandler<Item>(
     itemTaskManager.getGetTaskName(),
-    async ({ id, path }, actor, { log }) => {
-      if (await isRecycledItem(path, actor, log)) throw new CannotGetRecycledItem(id);
+    async ({ id, path }, actor, { log, handler }) => {
+      if (await isRecycledItem(path, actor, log, handler)) throw new CannotGetRecycledItem(id);
     },
   );
 
   // Hide recycled items when getting own items
-  runner.setTaskPostHookHandler<Item[]>(itemTaskManager.getGetOwnTaskName(), async (items) => {
-    await removeRecycledItems(items);
-  });
+  runner.setTaskPostHookHandler<Item[]>(
+    itemTaskManager.getGetOwnTaskName(),
+    async (items, actor, { handler }) => {
+      await removeRecycledItems(items, handler);
+    },
+  );
 
   // Hide recycled items when getting shared items
   runner.setTaskPostHookHandler<Item[]>(
     itemTaskManager.getGetSharedWithTaskName(),
-    async (items) => {
-      await removeRecycledItems(items);
+    async (items, actor, { handler }) => {
+      await removeRecycledItems(items, handler);
     },
   );
 
   // Hide recycled items when getting children
-  runner.setTaskPostHookHandler<Item[]>(itemTaskManager.getGetChildrenTaskName(), async (items) => {
-    await removeRecycledItems(items);
-  });
+  runner.setTaskPostHookHandler<Item[]>(
+    itemTaskManager.getGetChildrenTaskName(),
+    async (items, actor, { handler }) => {
+      await removeRecycledItems(items, handler);
+    },
+  );
 
   // Hide recycled items when getting descendants
   runner.setTaskPostHookHandler<Item[]>(
     itemTaskManager.getGetDescendantsTaskName(),
-    async (items) => {
-      await removeRecycledItems(items);
+    async (items, actor, { handler }) => {
+      await removeRecycledItems(items, handler);
     },
   );
 
@@ -138,11 +145,11 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   // Replace recycled items with errors
   runner.setTaskPostHookHandler<(Item | GraaspError)[]>(
     itemTaskManager.getGetManyTaskName(),
-    async (items) => {
+    async (items, actor, { handler }) => {
       // get recycled ids from given item paths and filter them out
       const recycledItems = await recycledItemService.areDeleted(
         items.map((item) => (item as Item)?.path).filter(Boolean),
-        db.pool,
+        handler,
       );
       // replace deleted items with errors
       const filteredItems = items.map((item) => {
@@ -286,6 +293,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     },
   );
 
+  // THIS FUNCTION IS NOT USED IN A HOOK
   async function recycleItem(
     itemId: string,
     member: Member,
@@ -311,6 +319,7 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     return runner.runSingleSequence([...t1, t2, t3, t4], log);
   }
 
+  // THIS FUNCTION IS NOT USED IN A HOOK
   async function restoreItem(
     itemId: string,
     member: Member,
@@ -318,13 +327,20 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
   ): Promise<unknown> {
     // remove entry from recycle_item
     const t1 = recycledItemTaskManager.createDeleteTask(member, itemId);
-    return runner.runSingle(t1, log);
+    return runner.runSingle(t1);
   }
 
+  // THIS FUNCTION IS USED IN HOOKS ONLY
   // warning: avoid this function if this is used on many items AND in hooks
-  async function isRecycledItem(path: string, member: Actor, log: FastifyLoggerInstance) {
+  async function isRecycledItem(
+    path: string,
+    member: Actor,
+    log: FastifyLoggerInstance,
+    handler: DatabaseTransactionHandler,
+  ) {
     const t1 = recycledItemTaskManager.createIsDeletedTask(member as Member, { item: { path } });
-    return runner.runSingle(t1, log);
+    await t1.run(handler);
+    return t1.result;
   }
 };
 
