@@ -4,6 +4,7 @@ import { v4 } from 'uuid';
 
 import { FastifyLoggerInstance } from 'fastify';
 
+import { DatabaseTransactionHandler } from '@graasp/sdk';
 import { ItemMembershipTaskManager, ItemTaskManager, TaskRunner } from 'graasp-test';
 
 import { RecycledItemService } from '../src/db-service';
@@ -12,6 +13,8 @@ import {
   CannotGetRecycledItem,
   CannotMoveRecycledItem,
 } from '../src/graasp-recycle-bin-errors';
+import { TaskManager as RecycledItemTaskManager } from '../src/task-manager';
+import { IsItemDeletedTask } from '../src/tasks/is-item-deleted-task';
 import build from './app';
 import { GRAASP_ACTOR, ITEMS, ITEM_FILE, ITEM_FOLDER } from './constants';
 import {
@@ -26,6 +29,7 @@ const itemMembershipTaskManager = new ItemMembershipTaskManager();
 const runner = new TaskRunner();
 const actor = GRAASP_ACTOR;
 const MOCK_LOGGER = {} as unknown as FastifyLoggerInstance;
+const MOCK_HANDLER = {} as unknown as DatabaseTransactionHandler;
 
 describe('Plugin Tests', () => {
   beforeEach(() => {
@@ -43,8 +47,14 @@ describe('Plugin Tests', () => {
             jest
               .spyOn(RecycledItemService.prototype, 'isDeleted')
               .mockImplementation(async () => true);
-            jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
-            expect(fn(item, actor, { log: MOCK_LOGGER })).rejects.toEqual(
+            jest.spyOn(RecycledItemTaskManager.prototype, 'createIsDeletedTask').mockImplementation(
+              () =>
+                ({
+                  run: jest.fn(),
+                  result: true,
+                } as unknown as IsItemDeletedTask),
+            );
+            expect(fn(item, actor, { log: MOCK_LOGGER, handler: MOCK_HANDLER })).rejects.toEqual(
               new CannotMoveRecycledItem(item.id),
             );
           }
@@ -59,8 +69,14 @@ describe('Plugin Tests', () => {
             jest
               .spyOn(RecycledItemService.prototype, 'isDeleted')
               .mockImplementation(async () => true);
-            jest.spyOn(runner, 'runSingle').mockImplementation(async () => false);
-            expect(fn(item, actor, { log: MOCK_LOGGER })).resolves;
+            jest.spyOn(RecycledItemTaskManager.prototype, 'createIsDeletedTask').mockImplementation(
+              () =>
+                ({
+                  run: jest.fn(),
+                  result: false,
+                } as unknown as IsItemDeletedTask),
+            );
+            expect(fn(item, actor, { log: MOCK_LOGGER, handler: MOCK_HANDLER })).resolves;
           }
         });
 
@@ -75,10 +91,16 @@ describe('Plugin Tests', () => {
             jest
               .spyOn(RecycledItemService.prototype, 'isDeleted')
               .mockImplementation(async () => true);
-            jest.spyOn(runner, 'runSingle').mockImplementation(async () => true);
-            expect(fn({}, actor, { log: MOCK_LOGGER }, { original: item })).rejects.toEqual(
-              new CannotCopyRecycledItem(item.id),
+            jest.spyOn(RecycledItemTaskManager.prototype, 'createIsDeletedTask').mockImplementation(
+              () =>
+                ({
+                  run: jest.fn(),
+                  result: true,
+                } as unknown as IsItemDeletedTask),
             );
+            expect(
+              fn({}, actor, { log: MOCK_LOGGER, handler: MOCK_HANDLER }, { original: item }),
+            ).rejects.toEqual(new CannotCopyRecycledItem(item.id));
           }
         });
 
@@ -91,8 +113,15 @@ describe('Plugin Tests', () => {
             jest
               .spyOn(RecycledItemService.prototype, 'isDeleted')
               .mockImplementation(async () => true);
-            jest.spyOn(runner, 'runSingle').mockImplementation(async () => false);
-            expect(fn({}, actor, { log: MOCK_LOGGER }, { original: item })).resolves;
+            jest.spyOn(RecycledItemTaskManager.prototype, 'createIsDeletedTask').mockImplementation(
+              () =>
+                ({
+                  run: jest.fn(),
+                  result: false,
+                } as unknown as IsItemDeletedTask),
+            );
+            expect(fn({}, actor, { log: MOCK_LOGGER, handler: MOCK_HANDLER }, { original: item }))
+              .resolves;
           }
         });
 
@@ -111,7 +140,7 @@ describe('Plugin Tests', () => {
             jest
               .spyOn(RecycledItemService.prototype, 'areDeleted')
               .mockImplementation(async () => [{ path: deletedItemPath }]);
-            await fn(items, actor, { log: MOCK_LOGGER });
+            await fn(items, actor, { log: MOCK_LOGGER, handler: MOCK_HANDLER });
             expect(items.length).toEqual(ITEMS.length - 1);
             expect(items).toEqual(ITEMS.slice(1));
           }
@@ -128,7 +157,7 @@ describe('Plugin Tests', () => {
             jest
               .spyOn(RecycledItemService.prototype, 'areDeleted')
               .mockImplementation(async () => []);
-            await fn(items, actor, { log: MOCK_LOGGER });
+            await fn(items, actor, { log: MOCK_LOGGER, handler: MOCK_HANDLER });
             expect(items).toEqual([]);
           }
         });
@@ -147,7 +176,7 @@ describe('Plugin Tests', () => {
             jest
               .spyOn(RecycledItemService.prototype, 'areDeleted')
               .mockImplementation(async () => [{ path: deletedItemPath }]);
-            await fn(items, actor, { log: MOCK_LOGGER });
+            await fn(items, actor, { log: MOCK_LOGGER, handler: MOCK_HANDLER });
             expect(items.length).toEqual(ITEMS.length - 1);
             expect(items).toEqual(ITEMS.slice(1));
           }
@@ -167,7 +196,7 @@ describe('Plugin Tests', () => {
             jest
               .spyOn(RecycledItemService.prototype, 'areDeleted')
               .mockImplementation(async () => [{ path: deletedItemPath }]);
-            await fn(items, actor, { log: MOCK_LOGGER });
+            await fn(items, actor, { log: MOCK_LOGGER, handler: MOCK_HANDLER });
             expect(items.length).toEqual(ITEMS.length - 1);
             expect(items).toEqual(ITEMS.slice(1));
           }
@@ -187,7 +216,7 @@ describe('Plugin Tests', () => {
             jest
               .spyOn(RecycledItemService.prototype, 'areDeleted')
               .mockImplementation(async () => [{ path: deletedItemPath }]);
-            await fn(items, actor, { log: MOCK_LOGGER });
+            await fn(items, actor, { log: MOCK_LOGGER, handler: MOCK_HANDLER });
             expect(items.length).toEqual(ITEMS.length - 1);
             expect(items).toEqual(ITEMS.slice(1));
           }
@@ -206,12 +235,16 @@ describe('Plugin Tests', () => {
             jest
               .spyOn(RecycledItemService.prototype, 'isDeleted')
               .mockImplementation(async () => true);
-            jest.spyOn(runner, 'runSingle').mockImplementation(async () => {
-              return true;
-            });
-            expect(fn(deletedItem, actor, { log: MOCK_LOGGER })).rejects.toEqual(
-              new CannotGetRecycledItem(deletedItem.id),
+            jest.spyOn(RecycledItemTaskManager.prototype, 'createIsDeletedTask').mockImplementation(
+              () =>
+                ({
+                  run: jest.fn(),
+                  result: true,
+                } as unknown as IsItemDeletedTask),
             );
+            expect(
+              fn(deletedItem, actor, { log: MOCK_LOGGER, handler: MOCK_HANDLER }),
+            ).rejects.toEqual(new CannotGetRecycledItem(deletedItem.id));
           }
         });
 
@@ -225,8 +258,14 @@ describe('Plugin Tests', () => {
             jest
               .spyOn(RecycledItemService.prototype, 'isDeleted')
               .mockImplementation(async () => true);
-            jest.spyOn(runner, 'runSingle').mockImplementation(async () => false);
-            expect(fn(item, actor, { log: MOCK_LOGGER })).resolves;
+            jest.spyOn(RecycledItemTaskManager.prototype, 'createIsDeletedTask').mockImplementation(
+              () =>
+                ({
+                  run: jest.fn(),
+                  result: false,
+                } as unknown as IsItemDeletedTask),
+            );
+            expect(fn(item, actor, { log: MOCK_LOGGER, handler: MOCK_HANDLER })).resolves;
           }
         });
 
@@ -244,7 +283,7 @@ describe('Plugin Tests', () => {
             jest
               .spyOn(RecycledItemService.prototype, 'areDeleted')
               .mockImplementation(async () => [{ path: deletedItemPath }]);
-            await fn(items, actor, { log: MOCK_LOGGER });
+            await fn(items, actor, { log: MOCK_LOGGER, handler: MOCK_HANDLER });
             expect(items.length).toEqual(ITEMS.length);
             expect(items[0]).toEqual(new CannotGetRecycledItem(deletedItemPath));
             expect(items[1]).toEqual(ITEMS[1]);
