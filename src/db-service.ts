@@ -133,6 +133,10 @@ export class RecycledItemService {
     itemPaths: string[],
     transactionHandler: TrxHandler,
   ): Promise<Pick<Item, 'path'>[]> {
+    if (!itemPaths || !itemPaths.length) {
+      return [];
+    }
+
     const whereCondition = sql.join(
       itemPaths.map((path) => sql`item_path @> ${path}`),
       sql` OR `,

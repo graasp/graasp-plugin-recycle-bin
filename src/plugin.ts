@@ -70,17 +70,19 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
     }
     // get recycled ids from given item paths and filter them out
     const recycledItems = await recycledItemService.areDeleted(
-      items.map(({ path }) => path),
+      items.map((item) => item.path).filter(Boolean),
       handler,
     );
 
     // keep only non-deleted items
-    const filteredItems = items.map((item) => {
-      return recycledItems.find(({ path }) => item.path.includes(path)) ? null : item;
-    });
+    if (recycledItems.length) {
+      const filteredItems = items.map((item) => {
+        return recycledItems.find(({ path }) => item.path.includes(path)) ? null : item;
+      });
 
-    // split for in-place changes in the array
-    items.splice(0, items.length, ...filteredItems.filter(Boolean));
+      // split for in-place changes in the array
+      items.splice(0, items.length, ...filteredItems.filter(Boolean));
+    }
   };
 
   // Prevent moving of recycled item
@@ -151,15 +153,18 @@ const plugin: FastifyPluginAsync<RecycleBinOptions> = async (fastify, options) =
         items.map((item) => (item as Item)?.path).filter(Boolean),
         handler,
       );
-      // replace deleted items with errors
-      const filteredItems = items.map((item) => {
-        const itemPath = (item as Item).path;
-        return recycledItems.find(({ path }) => itemPath.includes(path))
-          ? new CannotGetRecycledItem(itemPath)
-          : item;
-      });
-      // split for in-place changes in the array
-      items.splice(0, items.length, ...filteredItems);
+
+      if (recycledItems.length) {
+        // replace deleted items with errors
+        const filteredItems = items.map((item) => {
+          const itemPath = (item as Item).path;
+          return recycledItems.find(({ path }) => itemPath.includes(path))
+            ? new CannotGetRecycledItem(itemPath)
+            : item;
+        });
+        // split for in-place changes in the array
+        items.splice(0, items.length, ...filteredItems);
+      }
     },
   );
 
